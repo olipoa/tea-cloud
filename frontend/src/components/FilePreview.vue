@@ -9,9 +9,7 @@
     @closed="emit('close')"
   >
     <template v-if="item">
-      <VideoPlayer v-if="category === 'video'" :url="rawUrl" />
-      <AudioPlayer v-else-if="category === 'audio'" :url="rawUrl" :filename="item.name" />
-      <ImageViewer v-else-if="category === 'image'" :url="rawUrl" @close="visible = false" />
+      <ImageViewer v-if="category === 'image'" :url="rawUrl" @close="visible = false" />
       <PdfViewer v-else-if="category === 'pdf'" :url="rawUrl" />
       <TextViewer v-else-if="category === 'text'" :url="rawUrl" />
     </template>
@@ -35,8 +33,6 @@ import { ref, computed, watch } from 'vue'
 import { Download } from '@element-plus/icons-vue'
 import { type FileInfo, fileApi } from '@/services/api'
 import { getCategory, formatSize, formatDate } from '@/utils/fileUtils'
-import VideoPlayer from './VideoPlayer.vue'
-import AudioPlayer from './AudioPlayer.vue'
 import ImageViewer from './ImageViewer.vue'
 import PdfViewer from './PdfViewer.vue'
 import TextViewer from './TextViewer.vue'
