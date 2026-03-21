@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -168,6 +169,8 @@ func StaticFileMiddleware(svc *services.FileService) gin.HandlerFunc {
 		if len(relPath) > 0 && relPath[0] == '/' {
 			relPath = relPath[1:]
 		}
+
+		log.Printf("[raw] %s %s -> %q", c.Request.Method, c.Request.RemoteAddr, relPath)
 
 		abs, err := svc.AbsPath(relPath)
 		if err != nil {

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/grandcat/zeroconf"
@@ -94,6 +96,30 @@ func (d *DiscoveryService) Discover() ([]PeerInfo, error) {
 			return peers, nil
 		}
 	}
+}
+
+// GetBestLocalIP returns the local IPv4 address that the OS would use to reach the
+// host in location. It performs a UDP "dial" (no packets sent) so the kernel
+// routing table picks the correct outgoing interface automatically.
+// Falls back to GetLocalIPs()[0] if the target cannot be resolved.
+func GetBestLocalIP(location string) string {
+	// Normalise: "airplay://host:port" → "http://host:port" so url.Parse works.
+	normalized := strings.ReplaceAll(location, "airplay://", "http://")
+	if u, err := url.Parse(normalized); err == nil && u.Hostname() != "" {
+		target := u.Hostname() + ":1"
+		conn, err := net.Dial("udp", target)
+		if err == nil {
+			defer conn.Close()
+			if udpAddr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
+				return udpAddr.IP.String()
+			}
+		}
+	}
+	// Fallback: first non-loopback IPv4 (original behaviour)
+	if ips := GetLocalIPs(); len(ips) > 0 {
+		return ips[0]
+	}
+	return "127.0.0.1"
 }
 
 // GetLocalIPs returns non-loopback IPv4 addresses of this machine.

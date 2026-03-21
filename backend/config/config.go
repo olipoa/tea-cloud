@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 )
 
 type Config struct {
@@ -32,7 +33,9 @@ func Load() *Config {
 	nodeName, _ := os.Hostname()
 
 	if v := os.Getenv("TEA_PORT"); v != "" {
-		_, _ = v, 0 // parsed below if needed
+		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 65535 {
+			port = n
+		}
 	}
 	if v := os.Getenv("TEA_SHARE_DIR"); v != "" {
 		shareDir = v

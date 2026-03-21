@@ -107,3 +107,21 @@ export const peerApi = {
     return http.get('/api/self').then(r => r.data)
   },
 }
+
+export interface DLNARenderer {
+  name: string
+  location: string
+  protocol: 'dlna' | 'airplay'
+}
+
+export const castApi = {
+  /** Discover AirPlay / DLNA cast devices on the LAN */
+  devices(): Promise<DLNARenderer[]> {
+    return http.get('/api/cast/devices').then(r => r.data)
+  },
+
+  /** Cast the given file path to a renderer */
+  send(location: string, filePath: string): Promise<void> {
+    return http.post('/api/cast', { location, path: filePath }).then(() => undefined)
+  },
+}

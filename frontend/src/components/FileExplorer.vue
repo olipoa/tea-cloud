@@ -125,6 +125,7 @@ import { useFileStore } from '@/stores/file'
 import { fileApi } from '@/services/api'
 import { type FileInfo } from '@/services/api'
 import { formatSize, formatDate, canPreview, getCategory } from '@/utils/fileUtils'
+import { useDownload } from '@/composables/useDownload'
 
 const emit = defineEmits<{
   (e: 'preview', item: FileInfo): void
@@ -150,11 +151,8 @@ function handleSingleClick(item: FileInfo) {
 }
 
 function download(item: FileInfo) {
-  const url = fileApi.downloadUrl(item.path)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = item.name
-  a.click()
+  const { download: dl } = useDownload()
+  dl(item.path, item.name)
 }
 
 async function deleteItem(item: FileInfo) {

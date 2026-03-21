@@ -7,7 +7,34 @@
         <div class="video-overlay-header">
           <span class="video-title">{{ store.currentTrack?.name }}</span>
           <div class="video-header-actions">
-            <el-button size="small" circle :icon="CastIcon" class="overlay-btn" @click="startCasting" title="投屏" />
+            <el-popover
+              v-model:visible="castPopoverVisible"
+              placement="bottom-end"
+              :width="220"
+              trigger="manual"
+              :hide-after="0"
+              @click-outside="castPopoverVisible = false"
+            >
+              <template #reference>
+                <el-button size="small" circle :icon="CastIcon" class="overlay-btn" @click.stop="openCastPopover" title="投屏" />
+              </template>
+              <div class="cast-popover">
+                <div class="cast-popover-title">选择投屏设备</div>
+                <div v-if="castLoading" class="cast-popover-msg">正在扫描...</div>
+                <div v-else-if="castDevices.length === 0" class="cast-popover-msg">未发现 DLNA 设备</div>
+                <ul v-else class="cast-device-list">
+                  <li
+                    v-for="d in castDevices"
+                    :key="d.location"
+                    class="cast-device-item"
+                    @click="castTo(d)"
+                  >
+                    <el-icon class="cast-device-icon"><VideoCamera /></el-icon>
+                    {{ d.name }}
+                  </li>
+                </ul>
+              </div>
+            </el-popover>
             <el-button size="small" circle :icon="FullScreen" class="overlay-btn" @click="toggleNativeFullscreen" title="全屏" />
             <el-button size="small" circle :icon="Close" class="overlay-btn" @click="store.toggleVideo()" title="最小化" />
           </div>
@@ -102,44 +129,17 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { Headset, VideoCamera, VideoPlay, VideoPause, List, Close, FullScreen } from '@element-plus/icons-vue'
 import { useMediaPlayerStore } from '@/stores/audioPlayer'
 import { fileApi } from '@/services/api'
-import { defineComponent, h } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useCast } from '@/composables/useCast'
+import { formatTime } from '@/utils/fileUtils'
 
-const SkipBack = defineComponent({
-  render: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'currentColor' }, [
-    h('path', { d: 'M6 6h2v12H6zm3.5 6 8.5 6V6z' }),
-  ]),
-})
-
-const SkipForward = defineComponent({
-  render: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'currentColor' }, [
-    h('path', { d: 'M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z' }),
-  ]),
-})
-
-const CastIcon = defineComponent({
-  render: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'currentColor' }, [
-    h('path', { d: 'M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z' }),
-  ]),
-})
+import { SkipBack, SkipForward, CastIcon } from '@/components/icons/index'
 
 const store = useMediaPlayerStore()
+const { castPopoverVisible, castLoading, castDevices, openCastPopover, castTo } = useCast()
 const mediaRef = ref<HTMLMediaElement | null>(null)
 const videoAreaRef = ref<HTMLElement | null>(null)
 const hoverTime = ref<number | null>(null)
 const hoverPercent = ref(0)
-
-function startCasting() {
-  const el = mediaRef.value as any
-  if (!el) return
-  if (typeof el.webkitShowPlaybackTargetPicker === 'function') {
-    el.webkitShowPlaybackTargetPicker()
-  } else if (el.remote && typeof el.remote.prompt === 'function') {
-    el.remote.prompt().catch(() => {})
-  } else {
-    ElMessage.warning('当前浏览器不支持投屏功能')
-  }
-}
 
 function toggleNativeFullscreen() {
   const el = videoAreaRef.value
@@ -244,14 +244,6 @@ function onProgressHover(e: MouseEvent) {
   hoverTime.value = ratio * store.duration
 }
 
-function formatTime(secs: number): string {
-  if (!secs || isNaN(secs)) return '0:00'
-  const h = Math.floor(secs / 3600)
-  const m = Math.floor((secs % 3600) / 60)
-  const s = Math.floor(secs % 60)
-  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
 </script>
 
 <style scoped lang="scss">
@@ -454,5 +446,53 @@ function formatTime(secs: number): string {
 .player-slide-enter-from,
 .player-slide-leave-to {
   transform: translateY(100%);
+}
+
+/* Cast popover */
+.cast-popover {
+  padding: 2px 0;
+}
+
+.cast-popover-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+  padding: 0 4px 6px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  margin-bottom: 4px;
+}
+
+.cast-popover-msg {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.cast-device-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cast-device-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--el-text-color-primary);
+
+  &:hover {
+    background: var(--el-fill-color-light);
+  }
+}
+
+.cast-device-icon {
+  font-size: 16px;
+  color: var(--el-color-primary);
+  flex-shrink: 0;
 }
 </style>

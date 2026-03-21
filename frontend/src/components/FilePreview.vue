@@ -33,6 +33,7 @@ import { ref, computed, watch } from 'vue'
 import { Download } from '@element-plus/icons-vue'
 import { type FileInfo, fileApi } from '@/services/api'
 import { getCategory, formatSize, formatDate } from '@/utils/fileUtils'
+import { useDownload } from '@/composables/useDownload'
 import ImageViewer from './ImageViewer.vue'
 import PdfViewer from './PdfViewer.vue'
 import TextViewer from './TextViewer.vue'
@@ -51,10 +52,8 @@ const rawUrl = computed(() => props.item ? fileApi.rawUrl(props.item.path) : '')
 
 function download() {
   if (!props.item) return
-  const a = document.createElement('a')
-  a.href = fileApi.downloadUrl(props.item.path)
-  a.download = props.item.name
-  a.click()
+  const { download: dl } = useDownload()
+  dl(props.item.path, props.item.name)
 }
 </script>
 

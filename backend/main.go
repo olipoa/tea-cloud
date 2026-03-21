@@ -59,6 +59,10 @@ func main() {
 		peerHandler := handlers.NewPeerHandler(discoverySvc)
 		api.GET("/peers", peerHandler.ListPeers)
 		api.GET("/self", handlers.SelfInfo(cfg.NodeName, cfg.Port))
+
+		castHandler := handlers.NewCastHandler(services.NewCastService(), cfg.Port)
+		api.GET("/cast/devices", castHandler.ListDevices)
+		api.POST("/cast", castHandler.Cast)
 	}
 
 	// Raw file serving (for inline preview / media streaming)
