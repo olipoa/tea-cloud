@@ -209,6 +209,234 @@ func (s *FileService) AbsPath(relPath string) (string, error) {
 	return s.safePath(relPath)
 }
 
+// RenameFile renames a file or folder within the share root.
+// newName must be a simple filename with no path separators.
+func (s *FileService) RenameFile(relPath, newName string) (*FileInfo, error) {
+	// Reject path separators in newName
+	if strings.ContainsAny(newName, "/\\") {
+		return nil, fmt.Errorf("invalid name: must not contain path separators")
+	}
+	newName = filepath.Base(newName)
+	if newName == "" || newName == "." || newName == ".." {
+		return nil, fmt.Errorf("invalid name")
+	}
+
+	abs, err := s.safePath(relPath)
+	if err != nil {
+		return nil, err
+	}
+	newAbs := filepath.Join(filepath.Dir(abs), newName)
+	// Verify new path is still inside root
+	if _, err := s.safePath(filepath.Join(filepath.Dir(relPath), newName)); err != nil {
+		return nil, err
+	}
+	if err := os.Rename(abs, newAbs); err != nil {
+		return nil, err
+	}
+	rel, _ := filepath.Rel(s.Root, newAbs)
+	rel = filepath.ToSlash(rel)
+	info, err := os.Stat(newAbs)
+	if err != nil {
+		return nil, err
+	}
+	ext := strings.ToLower(filepath.Ext(newName))
+	return &FileInfo{
+		Name:    newName,
+		Path:    rel,
+		Size:    info.Size(),
+		IsDir:   info.IsDir(),
+		ModTime: info.ModTime().UnixMilli(),
+		MIME:    mimeByExt(ext),
+		Ext:     ext,
+	}, nil
+}
+
+// CopyPath copies a file or directory (src) into the destination directory (destDir).
+// If a name conflict exists, a "(1)" suffix is appended.
+func (s *FileService) CopyPath(srcRel, destDirRel string) (*FileInfo, error) {
+	srcAbs, err := s.safePath(srcRel)
+	if err != nil {
+		return nil, err
+	}
+	destDirAbs, err := s.safePath(destDirRel)
+	if err != nil {
+		return nil, err
+	}
+	srcInfo, err := os.Stat(srcAbs)
+	if err != nil {
+		return nil, err
+	}
+	// Resolve conflict name
+	baseName := srcInfo.Name()
+	destAbs := filepath.Join(destDirAbs, baseName)
+	if _, statErr := os.Stat(destAbs); statErr == nil {
+		ext := filepath.Ext(baseName)
+		stem := strings.TrimSuffix(baseName, ext)
+		destAbs = filepath.Join(destDirAbs, stem+" (1)"+ext)
+	}
+	if srcInfo.IsDir() {
+		if err := copyDir(srcAbs, destAbs); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := copyFile(srcAbs, destAbs); err != nil {
+			return nil, err
+		}
+	}
+	rel, _ := filepath.Rel(s.Root, destAbs)
+	rel = filepath.ToSlash(rel)
+	newInfo, err := os.Stat(destAbs)
+	if err != nil {
+		return nil, err
+	}
+	name := filepath.Base(destAbs)
+	ext := strings.ToLower(filepath.Ext(name))
+	return &FileInfo{
+		Name:    name,
+		Path:    rel,
+		Size:    newInfo.Size(),
+		IsDir:   newInfo.IsDir(),
+		ModTime: newInfo.ModTime().UnixMilli(),
+		MIME:    mimeByExt(ext),
+		Ext:     ext,
+	}, nil
+}
+
+// MovePath moves src into the destination directory.
+func (s *FileService) MovePath(srcRel, destDirRel string) (*FileInfo, error) {
+	srcAbs, err := s.safePath(srcRel)
+	if err != nil {
+		return nil, err
+	}
+	destDirAbs, err := s.safePath(destDirRel)
+	if err != nil {
+		return nil, err
+	}
+	// Prevent moving a directory into itself or its subdirectory
+	srcClean := filepath.Clean(srcAbs) + string(os.PathSeparator)
+	destClean := filepath.Clean(destDirAbs)
+	if strings.HasPrefix(destClean+string(os.PathSeparator), srcClean) || filepath.Clean(srcAbs) == destClean {
+		return nil, fmt.Errorf("cannot move a directory into itself or its subdirectory")
+	}
+
+	baseName := filepath.Base(srcAbs)
+	destAbs := filepath.Join(destDirAbs, baseName)
+
+	if err := os.Rename(srcAbs, destAbs); err != nil {
+		// Cross-device: copy then delete
+		srcInfo, statErr := os.Stat(srcAbs)
+		if statErr != nil {
+			return nil, err
+		}
+		if srcInfo.IsDir() {
+			if copyErr := copyDir(srcAbs, destAbs); copyErr != nil {
+				return nil, copyErr
+			}
+		} else {
+			if copyErr := copyFile(srcAbs, destAbs); copyErr != nil {
+				return nil, copyErr
+			}
+		}
+		os.RemoveAll(srcAbs)
+	}
+
+	rel, _ := filepath.Rel(s.Root, destAbs)
+	rel = filepath.ToSlash(rel)
+	newInfo, err := os.Stat(destAbs)
+	if err != nil {
+		return nil, err
+	}
+	name := filepath.Base(destAbs)
+	ext := strings.ToLower(filepath.Ext(name))
+	return &FileInfo{
+		Name:    name,
+		Path:    rel,
+		Size:    newInfo.Size(),
+		IsDir:   newInfo.IsDir(),
+		ModTime: newInfo.ModTime().UnixMilli(),
+		MIME:    mimeByExt(ext),
+		Ext:     ext,
+	}, nil
+}
+
+// SearchFiles recursively searches for files whose names contain keyword (case-insensitive).
+// Results are capped at 200 items.
+func (s *FileService) SearchFiles(dirRel, keyword string) ([]FileInfo, error) {
+	dirAbs, err := s.safePath(dirRel)
+	if err != nil {
+		return nil, err
+	}
+	keyword = strings.ToLower(keyword)
+	var results []FileInfo
+	_ = filepath.Walk(dirAbs, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // skip unreadable entries
+		}
+		if len(results) >= 200 {
+			return filepath.SkipAll
+		}
+		if filepath.Clean(path) == filepath.Clean(dirAbs) {
+			return nil // skip the root itself
+		}
+		if strings.Contains(strings.ToLower(info.Name()), keyword) {
+			rel, _ := filepath.Rel(s.Root, path)
+			rel = filepath.ToSlash(rel)
+			ext := strings.ToLower(filepath.Ext(info.Name()))
+			results = append(results, FileInfo{
+				Name:    info.Name(),
+				Path:    rel,
+				Size:    info.Size(),
+				IsDir:   info.IsDir(),
+				ModTime: info.ModTime().UnixMilli(),
+				MIME:    mimeByExt(ext),
+				Ext:     ext,
+			})
+		}
+		return nil
+	})
+	return results, nil
+}
+
+// copyFile copies a single file from src to dst.
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, in)
+	return err
+}
+
+// copyDir recursively copies a directory tree from src to dst.
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, info.Mode())
+		}
+		return copyFile(path, target)
+	})
+}
+
+// Ensure time import used (mimeByExt references aren't time-dependent but other funcs use it)
+var _ = time.Now
+
 // mimeByExt returns a MIME type for common extensions, falling back to
 // the standard library's mime package.
 func mimeByExt(ext string) string {

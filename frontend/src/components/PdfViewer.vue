@@ -9,17 +9,17 @@
     </div>
 
     <div class="pdf-container">
-      <n-spin :show="loading">
+      <t-loading :loading="loading">
         <canvas ref="canvasRef" class="pdf-canvas" />
         <div v-if="error" class="error-msg">PDF 加载失败</div>
-      </n-spin>
+      </t-loading>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { NSpin } from 'naive-ui'
+
 
 const props = defineProps<{ url: string }>()
 

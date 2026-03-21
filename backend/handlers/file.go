@@ -156,6 +156,86 @@ func (h *FileHandler) CreateDir(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"created": relPath})
 }
 
+// RenameFile godoc
+// PUT /api/files/rename
+// Body: { "path": "old/path", "newName": "newname.ext" }
+func (h *FileHandler) RenameFile(c *gin.Context) {
+	var body struct {
+		Path    string `json:"path"`
+		NewName string `json:"newName"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || body.Path == "" || body.NewName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path and newName required"})
+		return
+	}
+	info, err := h.svc.RenameFile(body.Path, body.NewName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"renamed": info})
+}
+
+// CopyFile godoc
+// POST /api/files/copy
+// Body: { "src": "source/path", "dest": "dest/folder" }
+func (h *FileHandler) CopyFile(c *gin.Context) {
+	var body struct {
+		Src  string `json:"src"`
+		Dest string `json:"dest"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || body.Src == "" || body.Dest == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "src and dest required"})
+		return
+	}
+	info, err := h.svc.CopyPath(body.Src, body.Dest)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"copied": info})
+}
+
+// MoveFile godoc
+// POST /api/files/move
+// Body: { "src": "source/path", "dest": "dest/folder" }
+func (h *FileHandler) MoveFile(c *gin.Context) {
+	var body struct {
+		Src  string `json:"src"`
+		Dest string `json:"dest"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || body.Src == "" || body.Dest == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "src and dest required"})
+		return
+	}
+	info, err := h.svc.MovePath(body.Src, body.Dest)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"moved": info})
+}
+
+// SearchFiles godoc
+// GET /api/files/search?path=.&keyword=xxx
+func (h *FileHandler) SearchFiles(c *gin.Context) {
+	relPath := c.DefaultQuery("path", ".")
+	keyword := c.Query("keyword")
+	if keyword == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "keyword required"})
+		return
+	}
+	results, err := h.svc.SearchFiles(relPath, keyword)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if results == nil {
+		results = []services.FileInfo{}
+	}
+	c.JSON(http.StatusOK, results)
+}
+
 // StaticFileMiddleware serves raw files (used for inline preview).
 // GET /raw/*filepath
 func StaticFileMiddleware(svc *services.FileService) gin.HandlerFunc {

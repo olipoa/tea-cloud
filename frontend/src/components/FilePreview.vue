@@ -1,11 +1,9 @@
 <template>
-  <n-modal
-    v-model:show="visible"
+  <t-dialog
+    v-model:visible="visible"
     :title="item?.name"
-    preset="card"
     style="max-width: 92vw; width: 900px"
-    :auto-focus="false"
-    @after-leave="emit('close')"
+    :on-close="() => emit('close')"
   >
     <template v-if="item">
       <PdfViewer v-if="category === 'pdf'" :url="rawUrl" />
@@ -18,22 +16,22 @@
           {{ formatSize(item.size) }} · {{ formatDate(item.modTime) }}
         </span>
         <div class="footer-actions">
-          <n-button @click="visible = false">关闭</n-button>
-          <n-button type="primary" @click="download">
+          <t-button @click="visible = false">关闭</t-button>
+          <t-button theme="primary" @click="download">
             <template #icon><span>⬇</span></template>
             下载
-          </n-button>
+          </t-button>
         </div>
       </div>
     </template>
-  </n-modal>
+  </t-dialog>
 </template>
 
 <script setup lang="ts">
 import { useDownload } from "@/composables/useDownload";
 import { type FileInfo, fileApi } from "@/services/api";
 import { formatDate, formatSize, getCategory } from "@/utils/fileUtils";
-import { NButton, NModal } from "naive-ui";
+
 import { computed, ref, watch } from "vue";
 import PdfViewer from "./PdfViewer.vue";
 import TextViewer from "./TextViewer.vue";

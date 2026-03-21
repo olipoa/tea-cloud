@@ -2,9 +2,22 @@
   <div class="peer-list">
     <div class="peer-header">
       <span class="label">局域网节点</span>
-      <button class="refresh-btn" :disabled="loading" @click="refresh" title="刷新">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" :class="{ spinning: loading }">
-          <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+      <button
+        class="refresh-btn"
+        :disabled="loading"
+        @click="refresh"
+        title="刷新"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          width="16"
+          height="16"
+          :class="{ spinning: loading }"
+        >
+          <path
+            d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+          />
         </svg>
       </button>
     </div>
@@ -12,7 +25,7 @@
     <div v-if="loading && peers.length === 0" class="scanning">扫描中…</div>
     <div v-else-if="peers.length === 0" class="empty">未发现其他节点</div>
 
-    <n-scrollbar style="max-height: 240px" v-else>
+    <div class="peer-scroll" v-else>
       <div
         v-for="peer in peers"
         :key="peer.url"
@@ -24,20 +37,30 @@
         <span class="peer-icon">🖥️</span>
         <div class="peer-info">
           <div class="peer-name">{{ peer.name }}</div>
-          <div class="peer-addr">{{ peer.addrV4 || peer.host }}:{{ peer.port }}</div>
+          <div class="peer-addr">
+            {{ peer.addrV4 || peer.host }}:{{ peer.port }}
+          </div>
         </div>
         <span v-if="peer.url === currentUrl" class="active-dot">✓</span>
       </div>
-    </n-scrollbar>
+    </div>
 
     <!-- This device -->
     <div class="self-section" v-if="self">
-      <n-divider title-placement="left" style="margin: 8px 0; font-size: 11px;">本机</n-divider>
-      <div class="peer-item" :class="{ active: !currentUrl }" @click="switchToSelf">
+      <t-divider content-position="left" style="margin: 8px 0; font-size: 11px"
+        >本机</t-divider
+      >
+      <div
+        class="peer-item"
+        :class="{ active: !currentUrl }"
+        @click="switchToSelf"
+      >
         <span class="peer-icon">🏠</span>
         <div class="peer-info">
           <div class="peer-name">{{ self.name }}</div>
-          <div class="peer-addr">{{ self.ips[0] || 'localhost' }}:{{ self.port }}</div>
+          <div class="peer-addr">
+            {{ self.ips[0] || "localhost" }}:{{ self.port }}
+          </div>
         </div>
         <span v-if="!currentUrl" class="active-dot">✓</span>
       </div>
@@ -46,56 +69,61 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { NScrollbar, NDivider } from 'naive-ui'
-import { peerApi, setBaseUrl, getBaseUrl, type PeerInfo, type SelfInfo } from '@/services/api'
-import { useFileStore } from '@/stores/file'
+import {
+  getBaseUrl,
+  peerApi,
+  setBaseUrl,
+  type PeerInfo,
+  type SelfInfo,
+} from "@/services/api";
+import { useFileStore } from "@/stores/file";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
-const peers = ref<PeerInfo[]>([])
-const self = ref<SelfInfo | null>(null)
-const loading = ref(false)
-const currentUrl = ref(getBaseUrl())
+const peers = ref<PeerInfo[]>([]);
+const self = ref<SelfInfo | null>(null);
+const loading = ref(false);
+const currentUrl = ref(getBaseUrl());
 
-const store = useFileStore()
+const store = useFileStore();
 
-let timer: ReturnType<typeof setInterval> | null = null
+let timer: ReturnType<typeof setInterval> | null = null;
 
 async function refresh() {
-  loading.value = true
+  loading.value = true;
   try {
-    const [p, s] = await Promise.all([peerApi.list(), peerApi.self()])
-    peers.value = p.filter(peer => {
-      if (!s) return true
-      return !s.ips.includes(peer.addrV4)
-    })
-    self.value = s
+    const [p, s] = await Promise.all([peerApi.list(), peerApi.self()]);
+    peers.value = p.filter((peer) => {
+      if (!s) return true;
+      return !s.ips.includes(peer.addrV4);
+    });
+    self.value = s;
   } catch {
     // ignore
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function switchTo(peer: PeerInfo) {
-  setBaseUrl(peer.url)
-  currentUrl.value = peer.url
-  store.loadDir('.')
+  setBaseUrl(peer.url);
+  currentUrl.value = peer.url;
+  store.loadDir(".");
 }
 
 function switchToSelf() {
-  setBaseUrl('')
-  currentUrl.value = ''
-  store.loadDir('.')
+  setBaseUrl("");
+  currentUrl.value = "";
+  store.loadDir(".");
 }
 
 onMounted(() => {
-  refresh()
-  timer = setInterval(refresh, 30000)
-})
+  refresh();
+  timer = setInterval(refresh, 30000);
+});
 
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
-})
+  if (timer) clearInterval(timer);
+});
 </script>
 
 <style scoped lang="scss">
@@ -127,14 +155,27 @@ onBeforeUnmount(() => {
   cursor: pointer;
   color: #888;
   padding: 0;
-  &:hover { background: #f0f0f0; color: #18a058; }
-  &:disabled { opacity: 0.4; cursor: not-allowed; }
+  &:hover {
+    background: #f0f0f0;
+    color: #18a058;
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 }
 
-.spinning { animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-.scanning, .empty {
+.scanning,
+.empty {
   padding: 8px 16px;
   font-size: 13px;
   color: #888;
@@ -150,11 +191,18 @@ onBeforeUnmount(() => {
   margin: 2px 6px;
   transition: background 0.15s;
 
-  &:hover { background: #f5f5f7; }
-  &.active { background: #e8f5ee; }
+  &:hover {
+    background: #f5f5f7;
+  }
+  &.active {
+    background: #e8f5ee;
+  }
 }
 
-.peer-icon { font-size: 1.1rem; flex-shrink: 0; }
+.peer-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
 
 .peer-info {
   flex: 1;
@@ -170,7 +218,9 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.active .peer-name { color: #18a058; }
+.active .peer-name {
+  color: #18a058;
+}
 
 .peer-addr {
   font-size: 11px;

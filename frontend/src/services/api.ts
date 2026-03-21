@@ -75,6 +75,34 @@ export const fileApi = {
       .post("/api/dirs", null, { params: { path } })
       .then(() => undefined);
   },
+
+  /** Rename a file or folder */
+  rename(path: string, newName: string): Promise<FileInfo> {
+    return http
+      .put("/api/files/rename", { path, newName })
+      .then((r) => r.data.renamed);
+  },
+
+  /** Copy a file or folder to destination directory */
+  copy(src: string, dest: string): Promise<FileInfo> {
+    return http
+      .post("/api/files/copy", { src, dest })
+      .then((r) => r.data.copied);
+  },
+
+  /** Move a file or folder to destination directory */
+  move(src: string, dest: string): Promise<FileInfo> {
+    return http
+      .post("/api/files/move", { src, dest })
+      .then((r) => r.data.moved);
+  },
+
+  /** Search files recursively under path */
+  search(path: string, keyword: string): Promise<FileInfo[]> {
+    return http
+      .get("/api/files/search", { params: { path, keyword } })
+      .then((r) => r.data);
+  },
 };
 
 export const peerApi = {

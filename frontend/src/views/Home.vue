@@ -1,51 +1,59 @@
 <template>
   <div class="home-page">
-    <!-- Desktop sidebar (>768px) -->
-    <aside class="sidebar" :class="{ open: drawerOpen }">
-      <div class="sidebar-inner">
-        <div class="logo">
-          <span class="logo-icon">🍵</span>
-          <span class="logo-text">Tea Cloud</span>
-        </div>
-        <n-divider style="margin: 8px 0" />
-        <PeerList />
+    <!-- Top bar -->
+    <header class="topbar">
+      <!-- Left: Tea Cloud logo + node selector -->
+      <div class="topbar-left">
+        <span class="topbar-logo">🍵</span>
+        <span class="topbar-title">Tea Cloud</span>
+        <t-select
+          v-model="selectedNodeValue"
+          :options="nodeOptions"
+          :loading="nodeLoading"
+          size="small"
+          style="width: 180px; margin-left: 12px"
+          placeholder="选择节点"
+          @change="onNodeChange"
+        />
       </div>
-    </aside>
 
-    <!-- Mobile overlay -->
-    <div v-if="drawerOpen" class="drawer-overlay" @click="drawerOpen = false" />
+      <!-- Right: transfer badge + dark mode toggle -->
+      <div class="topbar-right">
+        <t-badge :count="transferStore.runningCount" :offset="[-4, 4]">
+          <t-button
+            variant="text"
+            shape="square"
+            @click="$router.push('/transfer')"
+            title="传输列表"
+          >
+            <template #icon><t-icon name="swap" /></template>
+          </t-button>
+        </t-badge>
+        <t-button
+          variant="text"
+          shape="square"
+          @click="toggleDark()"
+          :title="isDark ? '切换亮色模式' : '切换暗色模式'"
+        >
+          <template #icon>
+            <t-icon :name="isDark ? 'sun' : 'moon'" />
+          </template>
+        </t-button>
+      </div>
+    </header>
 
     <!-- Main content -->
-    <div class="main-wrapper">
-      <!-- Mobile top bar -->
-      <header class="topbar">
-        <button
-          class="hamburger"
-          @click="drawerOpen = !drawerOpen"
-          aria-label="菜单"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
-          </svg>
-        </button>
-        <div class="topbar-logo">
-          <span>🍵</span>
-          <span class="topbar-title">Tea Cloud</span>
-        </div>
-      </header>
-
-      <main
-        class="main-content"
-        :class="{ 'has-player': audioStore.playlist.length > 0 }"
-      >
-        <n-card class="upload-card" :bordered="false">
-          <FileUpload />
-        </n-card>
-        <n-card class="explorer-card" :bordered="false">
-          <FileExplorer @preview="openPreview" />
-        </n-card>
-      </main>
-    </div>
+    <main
+      class="main-content"
+      :class="{ 'has-player': audioStore.playlist.length > 0 }"
+    >
+      <!-- Upload trigger row -->
+      <div class="upload-row">
+        <FileUpload />
+      </div>
+      <!-- File explorer -->
+      <FileExplorer @preview="openPreview" />
+    </main>
 
     <!-- Preview dialog (non-audio/image) -->
     <FilePreview :item="previewItem" @close="previewItem = null" />
@@ -78,25 +86,79 @@ import ComicViewer from "@/components/ComicViewer.vue";
 import FileExplorer from "@/components/FileExplorer.vue";
 import FilePreview from "@/components/FilePreview.vue";
 import FileUpload from "@/components/FileUpload.vue";
-import PeerList from "@/components/PeerList.vue";
 import VideoPlayer from "@/components/VideoPlayer.vue";
-import { type FileInfo } from "@/services/api";
+import { useTheme } from "@/composables/useTheme";
+import {
+  type FileInfo,
+  peerApi,
+  type PeerInfo,
+  type SelfInfo,
+  setBaseUrl,
+} from "@/services/api";
 import { useMediaPlayerStore } from "@/stores/audioPlayer";
 import { useFileStore } from "@/stores/file";
+import { useTransferStore } from "@/stores/transfer";
 import { getCategory } from "@/utils/fileUtils";
-import { NCard, NDivider } from "naive-ui";
-import { onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 const store = useFileStore();
 const audioStore = useMediaPlayerStore();
-const previewItem = ref<FileInfo | null>(null);
-const drawerOpen = ref(false);
+const transferStore = useTransferStore();
+const { isDark, toggleDark } = useTheme();
 
-// Comic viewer state
+const previewItem = ref<FileInfo | null>(null);
 const comicOpen = ref(false);
 const comicFiles = ref<FileInfo[]>([]);
 const comicIndex = ref(0);
 
+// ---- Node selector ----
+const peers = ref<PeerInfo[]>([]);
+const selfInfo = ref<SelfInfo | null>(null);
+const nodeLoading = ref(false);
+const selectedNodeValue = ref<string>("self");
+
+let nodeTimer: ReturnType<typeof setInterval> | null = null;
+
+const nodeOptions = computed(() => {
+  const opts: { label: string; value: string }[] = [];
+  if (selfInfo.value) {
+    opts.push({
+      label: `${selfInfo.value.name} (本机)`,
+      value: "self",
+    });
+  }
+  for (const p of peers.value) {
+    opts.push({
+      label: `${p.name} (${p.addrV4})`,
+      value: p.url,
+    });
+  }
+  return opts;
+});
+
+async function refreshNodes() {
+  nodeLoading.value = true;
+  try {
+    const [p, s] = await Promise.all([peerApi.list(), peerApi.self()]);
+    selfInfo.value = s;
+    peers.value = p.filter((peer) => !s.ips.includes(peer.addrV4));
+  } catch {
+    /* ignore */
+  } finally {
+    nodeLoading.value = false;
+  }
+}
+
+function onNodeChange(val: string) {
+  if (val === "self") {
+    setBaseUrl("");
+  } else {
+    setBaseUrl(val);
+  }
+  store.loadDir(".");
+}
+
+// ---- Preview ----
 function openPreview(item: FileInfo) {
   const cat = getCategory(item.ext);
   if (cat === "audio" || cat === "video") {
@@ -120,103 +182,65 @@ function openPreview(item: FileInfo) {
 
 onMounted(() => {
   store.loadDir(".");
+  refreshNodes();
+  nodeTimer = setInterval(refreshNodes, 30000);
+});
+
+onBeforeUnmount(() => {
+  if (nodeTimer) clearInterval(nodeTimer);
 });
 </script>
 
 <style scoped lang="scss">
-$sidebar-w: 220px;
-$topbar-h: 48px;
+$topbar-h: 52px;
 $breakpoint: 768px;
 
 .home-page {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background: #f5f5f7;
+  background: var(--td-bg-color-page);
 }
 
-/* ====== SIDEBAR ====== */
-.sidebar {
-  width: $sidebar-w;
-  flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid #efeff5;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  z-index: 300;
-  transition: transform 0.25s ease;
-}
-
-.sidebar-inner {
-  padding: 12px 0;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 16px 8px;
-}
-
-.logo-icon {
-  font-size: 1.6rem;
-}
-.logo-text {
-  font-size: 18px;
-  font-weight: 700;
-  color: #333;
-}
-
-/* ====== MAIN WRAPPER ====== */
-.main-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-
-/* ====== TOP BAR (hidden on desktop) ====== */
+/* ====== TOP BAR ====== */
 .topbar {
-  display: none;
+  display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   height: $topbar-h;
   padding: 0 16px;
-  background: #fff;
-  border-bottom: 1px solid #efeff5;
+  background: var(--td-bg-color-container);
+  border-bottom: 1px solid var(--td-component-stroke);
   flex-shrink: 0;
-  z-index: 10;
+  z-index: 100;
 }
 
-.hamburger {
-  display: inline-flex;
+.topbar-left {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #333;
-  &:hover {
-    background: #f0f0f0;
-  }
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
 }
 
 .topbar-logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #333;
+  font-size: 1.4rem;
+  flex-shrink: 0;
 }
 
 .topbar-title {
   font-size: 16px;
+  font-weight: 700;
+  color: var(--td-text-color-primary);
+  flex-shrink: 0;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 /* ====== MAIN CONTENT ====== */
@@ -235,15 +259,19 @@ $breakpoint: 768px;
   }
 }
 
+.upload-row {
+  flex-shrink: 0;
+}
+
 /* ====== PLAYER SHELL ====== */
 .player-shell {
   position: fixed;
   bottom: 0;
-  left: $sidebar-w;
+  left: 0;
   right: 0;
   z-index: 200;
-  background: #fff;
-  border-top: 1px solid #efeff5;
+  background: var(--td-bg-color-container);
+  border-top: 1px solid var(--td-component-stroke);
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
 }
 
@@ -252,52 +280,15 @@ $breakpoint: 768px;
 .player-slide-leave-active {
   transition: transform 0.3s ease;
 }
-
 .player-slide-enter-from,
 .player-slide-leave-to {
   transform: translateY(100%);
 }
 
-.upload-card {
-  flex-shrink: 0;
-}
-
-/* ====== MOBILE OVERLAY ====== */
-.drawer-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 299;
-}
-
 /* ====== RESPONSIVE ====== */
 @media (max-width: #{$breakpoint}) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    transform: translateX(-100%);
-    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
-
-    &.open {
-      transform: translateX(0);
-    }
-  }
-
-  .drawer-overlay {
-    display: block;
-  }
-
-  .topbar {
-    display: flex;
-    position: relative;
-    z-index: 250; // above media-player-bar (200) so hamburger always accessible
-  }
-
-  .player-shell {
-    left: 0; // full width on mobile
+  .topbar-title {
+    display: none;
   }
 
   .main-content {

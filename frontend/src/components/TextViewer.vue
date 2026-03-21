@@ -1,15 +1,15 @@
 <template>
   <div class="text-viewer">
-    <n-spin :show="loading" style="min-height: 120px;">
+    <t-loading :loading="loading" style="min-height: 120px;">
       <pre v-if="content !== null" class="code-content">{{ content }}</pre>
       <div v-else-if="!loading" class="error-msg">文本加载失败</div>
-    </n-spin>
+    </t-loading>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { NSpin } from 'naive-ui'
+
 
 const props = defineProps<{ url: string }>()
 

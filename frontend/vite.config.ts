@@ -1,24 +1,35 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
+import vue from "@vitejs/plugin-vue";
+import { resolve } from "path";
+import AutoImport from "unplugin-auto-import/vite";
+import { TDesignResolver } from "unplugin-vue-components/resolvers";
+import Components from "unplugin-vue-components/vite";
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    AutoImport({
+      resolvers: [TDesignResolver({ library: "vue-next" })],
+    }),
+    Components({
+      resolvers: [TDesignResolver({ library: "vue-next" })],
+    }),
+  ],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      "@": resolve(__dirname, "src"),
     },
   },
   build: {
-    outDir: '../backend/static',
+    outDir: "../backend/static",
     emptyOutDir: true,
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['vue', 'vue-router', 'pinia', 'axios'],
-          ui: ['naive-ui'],
-          pdf: ['pdfjs-dist'],
+          vendor: ["vue", "vue-router", "pinia", "axios"],
+          ui: ["tdesign-vue-next"],
+          pdf: ["pdfjs-dist"],
         },
       },
     },
@@ -26,14 +37,14 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
+      "/api": {
+        target: "http://localhost:8080",
         changeOrigin: true,
       },
-      '/raw': {
-        target: 'http://localhost:8080',
+      "/raw": {
+        target: "http://localhost:8080",
         changeOrigin: true,
       },
     },
   },
-})
+});

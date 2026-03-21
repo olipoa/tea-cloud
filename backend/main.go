@@ -52,7 +52,11 @@ func main() {
 		api.GET("/files", fileHandler.ListFiles)
 		api.GET("/files/info", fileHandler.GetFileInfo)
 		api.GET("/files/download", fileHandler.DownloadFile)
+		api.GET("/files/search", fileHandler.SearchFiles)
 		api.POST("/files/upload", fileHandler.UploadFile)
+		api.PUT("/files/rename", fileHandler.RenameFile)
+		api.POST("/files/copy", fileHandler.CopyFile)
+		api.POST("/files/move", fileHandler.MoveFile)
 		api.DELETE("/files", fileHandler.DeleteFile)
 		api.POST("/dirs", fileHandler.CreateDir)
 
