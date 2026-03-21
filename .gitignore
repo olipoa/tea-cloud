@@ -1,0 +1,41 @@
+# 编译产物
+tea-cloud.exe
+tea-cloud
+*.exe
+
+# 前端构建产物（已嵌入后端）
+backend/static/assets/
+backend/static/index.html
+
+# Node.js
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# 前端构建输出
+frontend/dist/
+
+# Go 编译缓存
+backend/*.test
+backend/tmp/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / 编辑器
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# 环境变量
+.env
+.env.local
+.env.*.local
