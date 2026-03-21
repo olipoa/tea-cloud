@@ -29,16 +29,7 @@
             <template #icon><t-icon name="swap" /></template>
           </t-button>
         </t-badge>
-        <t-button
-          variant="text"
-          shape="square"
-          @click="toggleDark()"
-          :title="isDark ? '切换亮色模式' : '切换暗色模式'"
-        >
-          <template #icon>
-            <t-icon :name="isDark ? 'sun' : 'moon'" />
-          </template>
-        </t-button>
+        <t-switch :value="isDark" size="small" @change="toggleDark" />
       </div>
     </header>
 
@@ -66,13 +57,18 @@
       @close="comicOpen = false"
     />
 
-    <!-- Player shell (persistent bottom bar) -->
+    <!-- Player shell (audio only — bottom bar) -->
     <Transition name="player-slide">
-      <div v-if="audioStore.playlist.length > 0" class="player-shell">
-        <AudioPlayer v-if="!audioStore.isVideo" />
-        <VideoPlayer v-else />
+      <div
+        v-if="audioStore.playlist.length > 0 && !audioStore.isVideo"
+        class="player-shell"
+      >
+        <AudioPlayer />
       </div>
     </Transition>
+
+    <!-- Video player (full-screen overlay, higher z-index) -->
+    <VideoPlayer v-if="audioStore.playlist.length > 0 && audioStore.isVideo" />
 
     <!-- Audio playlist drawer -->
     <AudioPlaylist />
@@ -159,16 +155,17 @@ function onNodeChange(val: string) {
 }
 
 // ---- Preview ----
-function openPreview(item: FileInfo) {
+function openPreview(item: FileInfo, siblings?: FileInfo[]) {
+  const sourceItems = siblings ?? store.sortedItems;
   const cat = getCategory(item.ext);
   if (cat === "audio" || cat === "video") {
-    const mediaFiles = store.items.filter(
+    const mediaFiles = sourceItems.filter(
       (f) => !f.isDir && getCategory(f.ext) === cat,
     );
     const startIndex = mediaFiles.findIndex((f) => f.path === item.path);
     audioStore.setPlaylist(mediaFiles, startIndex >= 0 ? startIndex : 0);
   } else if (cat === "image") {
-    const imageFiles = store.items.filter(
+    const imageFiles = sourceItems.filter(
       (f) => !f.isDir && getCategory(f.ext) === "image",
     );
     const startIndex = imageFiles.findIndex((f) => f.path === item.path);
@@ -269,7 +266,7 @@ $breakpoint: 768px;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 200;
+  z-index: 400;
   background: var(--td-bg-color-container);
   border-top: 1px solid var(--td-component-stroke);
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);

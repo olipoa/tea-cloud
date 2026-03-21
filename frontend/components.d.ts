@@ -49,6 +49,7 @@ declare module 'vue' {
     TSelect: typeof import('tdesign-vue-next')['Select']
     TSlider: typeof import('tdesign-vue-next')['Slider']
     TSpace: typeof import('tdesign-vue-next')['Space']
+    TSwitch: typeof import('tdesign-vue-next')['Switch']
     TTabPanel: typeof import('tdesign-vue-next')['TabPanel']
     TTabs: typeof import('tdesign-vue-next')['Tabs']
     VideoPlayer: typeof import('./src/components/VideoPlayer.vue')['default']

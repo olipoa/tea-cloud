@@ -37,7 +37,7 @@
             :selected="selected"
             @open="handleOpen"
             @select="selected = $event"
-            @preview="emit('preview', $event)"
+            @preview="(item: FileInfo) => emit('preview', item, sortedItems)"
             @download="handleDownload"
             @rename="startRename"
             @copy="startCopy"
@@ -50,7 +50,7 @@
             :items="sortedItems"
             :selected="selected"
             @open="handleOpen"
-            @preview="emit('preview', $event)"
+            @preview="(item: FileInfo) => emit('preview', item, sortedItems)"
             @download="handleDownload"
             @rename="startRename"
             @copy="startCopy"
@@ -120,7 +120,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "preview", item: FileInfo): void;
+  (e: "preview", item: FileInfo, siblings: FileInfo[]): void;
 }>();
 
 const transferStore = useTransferStore();
@@ -222,7 +222,7 @@ function handleOpen(item: FileInfo) {
   } else if (
     ["video", "audio", "image", "pdf", "text"].includes(getCategory(item.ext))
   ) {
-    emit("preview", item);
+    emit("preview", item, sortedItems.value);
   } else {
     transferStore.addDownload(item.path, item.name, item.size);
   }

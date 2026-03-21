@@ -137,7 +137,7 @@
         :selected="selected"
         @open="handleOpen"
         @select="selected = $event"
-        @preview="emit('preview', $event)"
+        @preview="(item: FileInfo) => emit('preview', item, store.sortedItems)"
         @download="handleDownload"
         @rename="startRename"
         @copy="startCopy"
@@ -150,7 +150,7 @@
         :items="store.sortedItems"
         :selected="selected"
         @open="handleOpen"
-        @preview="emit('preview', $event)"
+        @preview="(item: FileInfo) => emit('preview', item, store.sortedItems)"
         @download="handleDownload"
         @rename="startRename"
         @copy="startCopy"
@@ -218,7 +218,7 @@
       :root-path="panel.path"
       :view-mode="store.viewMode"
       @close="panelStack.splice(i)"
-      @preview="emit('preview', $event)"
+      @preview="(item: FileInfo, sib: FileInfo[]) => emit('preview', item, sib)"
     />
   </template>
 </template>
@@ -237,7 +237,9 @@ import FileListView from "./FileListView.vue";
 import FilePanel from "./FilePanel.vue";
 import FolderPicker from "./FolderPicker.vue";
 
-const emit = defineEmits<{ (e: "preview", item: FileInfo): void }>();
+const emit = defineEmits<{
+  (e: "preview", item: FileInfo, siblings: FileInfo[]): void;
+}>();
 
 const store = useFileStore();
 const transferStore = useTransferStore();
@@ -280,7 +282,7 @@ function handleOpen(item: FileInfo) {
   } else if (
     ["video", "audio", "image", "pdf", "text"].includes(getCategory(item.ext))
   ) {
-    emit("preview", item);
+    emit("preview", item, store.sortedItems);
   } else {
     transferStore.addDownload(item.path, item.name, item.size);
   }

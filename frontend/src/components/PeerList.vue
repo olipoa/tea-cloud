@@ -138,7 +138,7 @@ onBeforeUnmount(() => {
   padding: 0 12px 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #888;
+  color: var(--td-text-color-placeholder);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -153,11 +153,11 @@ onBeforeUnmount(() => {
   background: transparent;
   border-radius: 4px;
   cursor: pointer;
-  color: #888;
+  color: var(--td-text-color-placeholder);
   padding: 0;
   &:hover {
-    background: #f0f0f0;
-    color: #18a058;
+    background: var(--td-bg-color-container-hover);
+    color: var(--td-brand-color);
   }
   &:disabled {
     opacity: 0.4;
@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
 .empty {
   padding: 8px 16px;
   font-size: 13px;
-  color: #888;
+  color: var(--td-text-color-placeholder);
 }
 
 .peer-item {
@@ -192,10 +192,10 @@ onBeforeUnmount(() => {
   transition: background 0.15s;
 
   &:hover {
-    background: #f5f5f7;
+    background: var(--td-bg-color-container-hover);
   }
   &.active {
-    background: #e8f5ee;
+    background: rgba(24, 160, 88, 0.1);
   }
 }
 
@@ -212,19 +212,19 @@ onBeforeUnmount(() => {
 .peer-name {
   font-size: 13px;
   font-weight: 500;
-  color: #333;
+  color: var(--td-text-color-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .active .peer-name {
-  color: #18a058;
+  color: var(--td-brand-color);
 }
 
 .peer-addr {
   font-size: 11px;
-  color: #aaa;
+  color: var(--td-text-color-placeholder);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
 
 .active-dot {
   font-size: 12px;
-  color: #18a058;
+  color: var(--td-brand-color);
   font-weight: 700;
   flex-shrink: 0;
 }
