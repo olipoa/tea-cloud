@@ -47,8 +47,16 @@
       </main>
     </div>
 
-    <!-- Preview dialog (non-audio) -->
+    <!-- Preview dialog (non-audio/image) -->
     <FilePreview :item="previewItem" @close="previewItem = null" />
+
+    <!-- Fullscreen comic viewer -->
+    <ComicViewer
+      v-if="comicOpen"
+      :files="comicFiles"
+      :initial-index="comicIndex"
+      @close="comicOpen = false"
+    />
 
     <!-- Player shell (persistent bottom bar) -->
     <Transition name="player-slide">
@@ -66,6 +74,7 @@
 <script setup lang="ts">
 import AudioPlayer from "@/components/AudioPlayer.vue";
 import AudioPlaylist from "@/components/AudioPlaylist.vue";
+import ComicViewer from "@/components/ComicViewer.vue";
 import FileExplorer from "@/components/FileExplorer.vue";
 import FilePreview from "@/components/FilePreview.vue";
 import FileUpload from "@/components/FileUpload.vue";
@@ -83,6 +92,11 @@ const audioStore = useMediaPlayerStore();
 const previewItem = ref<FileInfo | null>(null);
 const drawerOpen = ref(false);
 
+// Comic viewer state
+const comicOpen = ref(false);
+const comicFiles = ref<FileInfo[]>([]);
+const comicIndex = ref(0);
+
 function openPreview(item: FileInfo) {
   const cat = getCategory(item.ext);
   if (cat === "audio" || cat === "video") {
@@ -91,6 +105,14 @@ function openPreview(item: FileInfo) {
     );
     const startIndex = mediaFiles.findIndex((f) => f.path === item.path);
     audioStore.setPlaylist(mediaFiles, startIndex >= 0 ? startIndex : 0);
+  } else if (cat === "image") {
+    const imageFiles = store.items.filter(
+      (f) => !f.isDir && getCategory(f.ext) === "image",
+    );
+    const startIndex = imageFiles.findIndex((f) => f.path === item.path);
+    comicFiles.value = imageFiles;
+    comicIndex.value = startIndex >= 0 ? startIndex : 0;
+    comicOpen.value = true;
   } else {
     previewItem.value = item;
   }

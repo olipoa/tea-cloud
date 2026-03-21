@@ -3,13 +3,12 @@
     v-model:show="visible"
     :title="item?.name"
     preset="card"
-    style="max-width: 92vw; width: 900px;"
+    style="max-width: 92vw; width: 900px"
     :auto-focus="false"
     @after-leave="emit('close')"
   >
     <template v-if="item">
-      <ImageViewer v-if="category === 'image'" :url="rawUrl" @close="visible = false" />
-      <PdfViewer v-else-if="category === 'pdf'" :url="rawUrl" />
+      <PdfViewer v-if="category === 'pdf'" :url="rawUrl" />
       <TextViewer v-else-if="category === 'text'" :url="rawUrl" />
     </template>
 
@@ -31,29 +30,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { NModal, NButton } from 'naive-ui'
-import { type FileInfo, fileApi } from '@/services/api'
-import { getCategory, formatSize, formatDate } from '@/utils/fileUtils'
-import { useDownload } from '@/composables/useDownload'
-import ImageViewer from './ImageViewer.vue'
-import PdfViewer from './PdfViewer.vue'
-import TextViewer from './TextViewer.vue'
+import { useDownload } from "@/composables/useDownload";
+import { type FileInfo, fileApi } from "@/services/api";
+import { formatDate, formatSize, getCategory } from "@/utils/fileUtils";
+import { NButton, NModal } from "naive-ui";
+import { computed, ref, watch } from "vue";
+import PdfViewer from "./PdfViewer.vue";
+import TextViewer from "./TextViewer.vue";
 
-const props = defineProps<{ item: FileInfo | null }>()
-const emit = defineEmits<{ (e: 'close'): void }>()
+const props = defineProps<{ item: FileInfo | null }>();
+const emit = defineEmits<{ (e: "close"): void }>();
 
-const visible = ref(false)
+const visible = ref(false);
 
-watch(() => props.item, (val) => { visible.value = !!val })
+watch(
+  () => props.item,
+  (val) => {
+    visible.value = !!val;
+  },
+);
 
-const category = computed(() => props.item ? getCategory(props.item.ext) : 'other')
-const rawUrl = computed(() => props.item ? fileApi.rawUrl(props.item.path) : '')
+const category = computed(() =>
+  props.item ? getCategory(props.item.ext) : "other",
+);
+const rawUrl = computed(() =>
+  props.item ? fileApi.rawUrl(props.item.path) : "",
+);
 
 function download() {
-  if (!props.item) return
-  const { download: dl } = useDownload()
-  dl(props.item.path, props.item.name)
+  if (!props.item) return;
+  const { download: dl } = useDownload();
+  dl(props.item.path, props.item.name);
 }
 </script>
 

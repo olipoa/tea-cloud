@@ -29,6 +29,9 @@ importers:
       pinia:
         specifier: ^2.2.4
         version: 2.3.1(typescript@5.9.3)(vue@3.5.30(typescript@5.9.3))
+      swiper:
+        specifier: ^12.1.2
+        version: 12.1.2
       vue:
         specifier: ^3.5.12
         version: 3.5.30(typescript@5.9.3)
@@ -866,6 +869,10 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
+  swiper@12.1.2:
+    resolution: {integrity: sha512-4gILrI3vXZqoZh71I1PALqukCFgk+gpOwe1tOvz5uE9kHtl2gTDzmYflYCwWvR4LOvCrJi6UEEU+gnuW5BtkgQ==}
+    engines: {node: '>= 4.7.0'}
+
   treemate@0.3.11:
     resolution: {integrity: sha512-M8RGFoKtZ8dF+iwJfAJTOH/SM4KluKOKRJpjCMhI8bG3qB74zrFoArKZ62ll0Fr3mqkMJiQOmWYkdYgDeITYQg==}
 
@@ -1644,6 +1651,8 @@ snapshots:
   smoothscroll@0.4.0: {}
 
   source-map-js@1.2.1: {}
+
+  swiper@12.1.2: {}
 
   treemate@0.3.11: {}
 
