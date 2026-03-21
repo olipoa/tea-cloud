@@ -47,13 +47,6 @@ export const fileApi = {
     return http.get("/api/files", { params: { path } }).then((r) => r.data);
   },
 
-  /** Get single file info */
-  info(path: string): Promise<FileInfo> {
-    return http
-      .get("/api/files/info", { params: { path } })
-      .then((r) => r.data);
-  },
-
   /** Get download URL for a file */
   downloadUrl(path: string): string {
     return `${_baseUrl}/api/files/download?path=${encodeURIComponent(path)}&download=1`;
@@ -67,50 +60,6 @@ export const fileApi = {
   /** Get thumbnail URL for a video file (requires ffmpeg on server) */
   thumbnailUrl(path: string): string {
     return `${_baseUrl}/api/files/thumbnail?path=${encodeURIComponent(path)}`;
-  },
-
-  /** Upload files to a directory */
-  upload(
-    dir: string,
-    files: File[],
-    onProgress?: (percent: number) => void,
-  ): Promise<{ uploaded: FileInfo[] }> {
-    const form = new FormData();
-    for (const f of files) {
-      form.append("file", f);
-    }
-    return http
-      .post("/api/files/upload", form, {
-        params: { path: dir },
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (e) => {
-          if (onProgress && e.total) {
-            onProgress(Math.round((e.loaded * 100) / e.total));
-          }
-        },
-      })
-      .then((r) => r.data);
-  },
-
-  /** Upload a single file to a directory with individual progress tracking */
-  uploadOne(
-    dir: string,
-    file: File,
-    onProgress?: (percent: number) => void,
-  ): Promise<void> {
-    const form = new FormData();
-    form.append("file", file);
-    return http
-      .post("/api/files/upload", form, {
-        params: { path: dir },
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (e) => {
-          if (onProgress && e.total) {
-            onProgress(Math.round((e.loaded * 100) / e.total));
-          }
-        },
-      })
-      .then(() => undefined);
   },
 
   /** Delete a file or folder */

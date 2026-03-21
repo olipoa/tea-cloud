@@ -8,10 +8,9 @@ import (
 )
 
 type Config struct {
-	Port      int
-	ShareDir  string
-	NodeName  string
-	MaxUpload int64 // bytes
+	Port     int
+	ShareDir string
+	NodeName string
 }
 
 var defaultShareDir = getDefaultShareDir()
@@ -55,9 +54,8 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:      port,
-		ShareDir:  shareDir,
-		NodeName:  nodeName,
-		MaxUpload: 10 * 1024 * 1024 * 1024, // 10 GB
+		Port:     port,
+		ShareDir: shareDir,
+		NodeName: nodeName,
 	}
 }

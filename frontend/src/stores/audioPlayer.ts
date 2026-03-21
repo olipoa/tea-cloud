@@ -110,6 +110,3 @@ export const useMediaPlayerStore = defineStore("mediaPlayer", () => {
     setIsPlaying,
   };
 });
-
-// backwards-compat alias
-export { useMediaPlayerStore as useAudioPlayerStore };
