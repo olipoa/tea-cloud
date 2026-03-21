@@ -1,12 +1,10 @@
 <template>
   <div class="image-viewer" @click="handleBgClick">
     <div class="image-toolbar">
-      <el-button-group size="small">
-        <el-button :icon="ZoomIn" @click.stop="zoom(0.2)" title="放大" />
-        <el-button :icon="ZoomOut" @click.stop="zoom(-0.2)" title="缩小" />
-        <el-button :icon="RefreshRight" @click.stop="rotate(90)" title="旋转" />
-        <el-button @click.stop="scale = 1; angle = 0" size="small" title="重置">重置</el-button>
-      </el-button-group>
+      <button class="tb-btn" @click.stop="zoom(0.2)" title="放大">🔍+</button>
+      <button class="tb-btn" @click.stop="zoom(-0.2)" title="缩小">🔍-</button>
+      <button class="tb-btn" @click.stop="rotate(90)" title="旋转">🔄</button>
+      <button class="tb-btn" @click.stop="scale = 1; angle = 0" title="重置">重置</button>
     </div>
     <div class="image-container" ref="containerRef">
       <img
@@ -24,7 +22,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ZoomIn, ZoomOut, RefreshRight } from '@element-plus/icons-vue'
 
 const props = defineProps<{ url: string }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -41,7 +38,6 @@ const imgStyle = computed(() => ({
   maxHeight: '75vh',
   display: 'block',
   margin: 'auto',
-  cursor: 'grab',
 }))
 
 function zoom(delta: number) {
@@ -53,23 +49,33 @@ function rotate(deg: number) {
 }
 
 function handleBgClick(e: MouseEvent) {
-  if (e.target === e.currentTarget) {
-    emit('close')
-  }
+  if (e.target === e.currentTarget) emit('close')
 }
 </script>
 
 <style scoped lang="scss">
 .image-viewer {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0,0,0,0.04);
   border-radius: 6px;
   overflow: hidden;
 }
 
 .image-toolbar {
   padding: 8px 12px;
-  background: var(--el-fill-color-light);
-  border-bottom: 1px solid var(--el-border-color-light);
+  background: #f7f7f7;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 6px;
+}
+
+.tb-btn {
+  padding: 4px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  &:hover { background: #f0f0f0; }
 }
 
 .image-container {
@@ -81,13 +87,6 @@ function handleBgClick(e: MouseEvent) {
   padding: 16px;
 }
 
-.preview-img {
-  object-fit: contain;
-  user-select: none;
-}
-
-.error-msg {
-  color: var(--el-color-danger);
-  padding: 32px;
-}
+.preview-img { object-fit: contain; user-select: none; }
+.error-msg { color: #d03050; padding: 32px; }
 </style>

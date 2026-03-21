@@ -1,123 +1,71 @@
 <template>
   <Transition name="player-slide">
-    <div v-if="store.playlist.length > 0" class="media-player-bar" :class="{ 'has-video': store.isVideo && store.showVideo }">
+    <div v-if="store.playlist.length > 0" class="media-player-bar">
 
-      <!-- Inline video display -->
-      <div v-if="store.isVideo && store.showVideo" ref="videoAreaRef" class="video-area">
-        <div class="video-overlay-header">
-          <span class="video-title">{{ store.currentTrack?.name }}</span>
-          <div class="video-header-actions">
-            <el-popover
-              v-model:visible="castPopoverVisible"
-              placement="bottom-end"
-              :width="220"
-              trigger="manual"
-              :hide-after="0"
-              @click-outside="castPopoverVisible = false"
-            >
-              <template #reference>
-                <el-button size="small" circle :icon="CastIcon" class="overlay-btn" @click.stop="openCastPopover" title="投屏" />
-              </template>
-              <div class="cast-popover">
-                <div class="cast-popover-title">选择投屏设备</div>
-                <div v-if="castLoading" class="cast-popover-msg">正在扫描...</div>
-                <div v-else-if="castDevices.length === 0" class="cast-popover-msg">未发现 DLNA 设备</div>
-                <ul v-else class="cast-device-list">
-                  <li
-                    v-for="d in castDevices"
-                    :key="d.location"
-                    class="cast-device-item"
-                    @click="castTo(d)"
-                  >
-                    <el-icon class="cast-device-icon"><VideoCamera /></el-icon>
-                    {{ d.name }}
-                  </li>
-                </ul>
-              </div>
-            </el-popover>
-            <el-button size="small" circle :icon="FullScreen" class="overlay-btn" @click="toggleNativeFullscreen" title="全屏" />
-            <el-button size="small" circle :icon="Close" class="overlay-btn" @click="store.toggleVideo()" title="最小化" />
-          </div>
-        </div>
-        <video
-          ref="mediaRef"
-          :src="currentUrl"
-          preload="metadata"
-          playsinline
-          class="video-el"
-          @timeupdate="onTimeUpdate"
-          @loadedmetadata="onLoadedMetadata"
-          @ended="onEnded"
-          @play="store.setIsPlaying(true)"
-          @pause="store.setIsPlaying(false)"
-          @error="onError"
-        />
-      </div>
+      <!-- ArtPlayer container (visible for both audio & video) -->
+      <div ref="artRef" class="art-container" :class="{ 'audio-mode': !store.isVideo, 'video-mode': store.isVideo && store.showVideo }" />
 
-      <!-- Hidden audio element (audio mode, or video minimised) -->
-      <audio
-        v-else
-        ref="mediaRef"
-        :src="currentUrl"
-        preload="metadata"
-        @timeupdate="onTimeUpdate"
-        @loadedmetadata="onLoadedMetadata"
-        @ended="onEnded"
-        @play="store.setIsPlaying(true)"
-        @pause="store.setIsPlaying(false)"
-        @error="onError"
-      />
-
-      <!-- Progress bar -->
-      <div class="progress-bar" @click="onProgressClick" @mousemove="onProgressHover" @mouseleave="hoverTime = null">
-        <div class="progress-fill" :style="{ width: progressPercent + '%' }" />
-        <div v-if="hoverTime !== null" class="progress-tooltip" :style="{ left: hoverPercent + '%' }">
-          {{ formatTime(hoverTime) }}
-        </div>
-      </div>
-
-      <!-- Controls row -->
+      <!-- Bottom control bar (always visible) -->
       <div class="bar-body">
         <!-- Left: track info -->
         <div class="track-info">
-          <el-icon class="media-icon">
-            <VideoCamera v-if="store.isVideo" />
-            <Headset v-else />
-          </el-icon>
+          <span class="media-emoji">{{ store.isVideo ? '🎬' : '🎵' }}</span>
           <div class="track-text">
             <span class="track-name" :title="store.currentTrack?.name">{{ store.currentTrack?.name }}</span>
             <span class="time-text">{{ formatTime(store.currentTime) }} / {{ formatTime(store.duration) }}</span>
           </div>
         </div>
 
-        <!-- Center: playback controls -->
+        <!-- Center: prev / play-pause / next -->
         <div class="controls">
-          <el-button :icon="SkipBack" circle size="small" :disabled="!store.hasPrev" @click="store.prev()" class="ctrl-btn" />
-          <el-button :icon="store.isPlaying ? VideoPause : VideoPlay" circle @click="store.togglePlay()" type="primary" class="ctrl-btn play-btn" />
-          <el-button :icon="SkipForward" circle size="small" :disabled="!store.hasNext" @click="store.next()" class="ctrl-btn" />
+          <button class="ctrl-btn" :disabled="!store.hasPrev" @click="store.prev()" title="上一首">
+            <SkipBack />
+          </button>
+          <button class="ctrl-btn play-btn" @click="togglePlayPause" title="播放/暂停">
+            <svg v-if="store.isPlaying" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></svg>
+            <svg v-else viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="ctrl-btn" :disabled="!store.hasNext" @click="store.next()" title="下一首">
+            <SkipForward />
+          </button>
         </div>
 
-        <!-- Right: expand video + playlist -->
+        <!-- Right: cast + video expand + playlist -->
         <div class="bar-right">
-          <el-button
-            v-if="store.isVideo && !store.showVideo"
-            :icon="FullScreen"
-            circle
-            size="small"
-            @click="store.toggleVideo()"
-            class="ctrl-btn"
-            title="展开视频"
-          />
+          <!-- Cast popover -->
+          <n-popover v-model:show="castPopoverVisible" trigger="manual" placement="top-end" :width="220">
+            <template #trigger>
+              <button class="ctrl-btn cast-btn" @click.stop="openCastPopover" title="投屏">
+                <CastIcon />
+              </button>
+            </template>
+            <div class="cast-popover">
+              <div class="cast-popover-title">选择投屏设备</div>
+              <div v-if="castLoading" class="cast-popover-msg">正在扫描...</div>
+              <div v-else-if="castDevices.length === 0" class="cast-popover-msg">未发现 DLNA 设备</div>
+              <ul v-else class="cast-device-list">
+                <li
+                  v-for="d in castDevices"
+                  :key="d.location"
+                  class="cast-device-item"
+                  :title="d.name"
+                  @click="castTo(d)"
+                >
+                  <span class="cast-device-icon">📺</span>
+                  <span class="cast-device-name">{{ d.name }}</span>
+                </li>
+              </ul>
+            </div>
+          </n-popover>
+
+          <button v-if="store.isVideo" class="ctrl-btn" @click="store.toggleVideo()" :title="store.showVideo ? '收起视频' : '展开视频'">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path v-if="store.showVideo" d="M5 16h3v3h2v-5H5zm3-8H5v2h5V5H8zm6 11h2v-3h3v-2h-5zm2-11V5h-2v5h5V8z"/><path v-else d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          </button>
+
           <span class="playlist-count">{{ store.currentIndex + 1 }} / {{ store.playlist.length }}</span>
-          <el-button
-            :icon="List"
-            circle
-            size="small"
-            @click="store.togglePlaylist()"
-            :type="store.showPlaylist ? 'primary' : ''"
-            class="ctrl-btn"
-            title="播放列表"
-          />
+          <button class="ctrl-btn" :class="{ active: store.showPlaylist }" @click="store.togglePlaylist()" title="播放列表">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3zm0 4h2v-2H3zm0-8h2V7H3zm4 4h14v-2H7zm0 4h14v-2H7zM7 7v2h14V7z"/></svg>
+          </button>
         </div>
       </div>
     </div>
@@ -125,239 +73,180 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
-import { Headset, VideoCamera, VideoPlay, VideoPause, List, Close, FullScreen } from '@element-plus/icons-vue'
+import { ref, computed, watch, onBeforeUnmount, nextTick, h } from 'vue'
+import { NPopover } from 'naive-ui'
+import Artplayer from 'artplayer'
 import { useMediaPlayerStore } from '@/stores/audioPlayer'
 import { fileApi } from '@/services/api'
 import { useCast } from '@/composables/useCast'
 import { formatTime } from '@/utils/fileUtils'
-
 import { SkipBack, SkipForward, CastIcon } from '@/components/icons/index'
 
 const store = useMediaPlayerStore()
 const { castPopoverVisible, castLoading, castDevices, openCastPopover, castTo } = useCast()
-const mediaRef = ref<HTMLMediaElement | null>(null)
-const videoAreaRef = ref<HTMLElement | null>(null)
-const hoverTime = ref<number | null>(null)
-const hoverPercent = ref(0)
 
-function toggleNativeFullscreen() {
-  const el = videoAreaRef.value
-  if (!el) return
-  if (!document.fullscreenElement) {
-    el.requestFullscreen().catch(() => {})
-  } else {
-    document.exitFullscreen().catch(() => {})
-  }
-}
+const artRef = ref<HTMLDivElement | null>(null)
+let art: Artplayer | null = null
 
 const currentUrl = computed(() =>
   store.currentTrack ? fileApi.rawUrl(store.currentTrack.path) : '',
 )
 
-const progressPercent = computed(() =>
-  store.duration > 0 ? (store.currentTime / store.duration) * 100 : 0,
-)
+function getMimeType(ext: string): string {
+  const map: Record<string, string> = {
+    mp4: 'video/mp4', webm: 'video/webm', ogg: 'video/ogg', mkv: 'video/x-matroska',
+    avi: 'video/x-msvideo', mov: 'video/quicktime',
+    mp3: 'audio/mpeg', flac: 'audio/flac', wav: 'audio/wav', aac: 'audio/aac',
+    m4a: 'audio/mp4', opus: 'audio/ogg',
+  }
+  return map[ext.toLowerCase()] ?? ''
+}
 
-// Track changes — reload + autoplay
-watch(currentUrl, async () => {
-  await nextTick()
-  if (!currentUrl.value || !mediaRef.value) return
-  mediaRef.value.load()
-  if (store.isPlaying) {
-    try { await mediaRef.value.play() } catch (_) {}
+function createArtPlayer() {
+  if (!artRef.value || !currentUrl.value) return
+  if (art) { art.destroy(); art = null }
+
+  const ext = store.currentTrack?.ext ?? ''
+  art = new Artplayer({
+    container: artRef.value,
+    url: currentUrl.value,
+    type: getMimeType(ext),
+    volume: 1,
+    autoplay: store.isPlaying,
+    pip: false,
+    fullscreen: store.isVideo,
+    fullscreenWeb: false,
+    playbackRate: false,
+    aspectRatio: false,
+    setting: false,
+    hotkey: true,
+    screenshot: false,
+    lock: true,
+    isLive: false,
+    theme: '#18a058',
+  })
+
+  art.on('ready', () => {
+    store.setDuration(art!.duration)
+    if (store.currentTime > 0) art!.currentTime = store.currentTime
+  })
+
+  art.on('video:timeupdate', () => {
+    store.setCurrentTime(art!.currentTime)
+  })
+
+  art.on('video:durationchange', () => {
+    store.setDuration(art!.duration)
+  })
+
+  art.on('play', () => store.setIsPlaying(true))
+  art.on('pause', () => store.setIsPlaying(false))
+
+  art.on('video:ended', () => {
+    if (store.hasNext) {
+      store.next()
+    } else {
+      store.setIsPlaying(false)
+      store.setCurrentTime(0)
+    }
+  })
+
+  art.on('error', () => {
+    if (store.hasNext) store.next()
+  })
+}
+
+// Switch track
+watch(currentUrl, async (url) => {
+  if (!url) return
+  if (art) {
+    art.switchUrl(url)
+    if (store.isPlaying) {
+      await nextTick()
+      art.play().catch(() => {})
+    }
+  } else {
+    await nextTick()
+    createArtPlayer()
   }
 })
 
 // Play/pause from store
-watch(() => store.isPlaying, async (playing) => {
-  if (!mediaRef.value) return
-  if (playing) {
-    try { await mediaRef.value.play() } catch (_) {}
-  } else {
-    mediaRef.value.pause()
-  }
+watch(() => store.isPlaying, (playing) => {
+  if (!art) return
+  if (playing) art.play().catch?.(() => {})
+  else art.pause()
 })
 
-// Seek from store
-watch(() => store.currentTime, (time) => {
-  if (mediaRef.value && Math.abs(mediaRef.value.currentTime - time) > 0.5) {
-    mediaRef.value.currentTime = time
-  }
-})
-
-// Re-attach when switching video ↔ audio element
-watch(() => store.showVideo, async () => {
-  await nextTick()
-  if (!mediaRef.value || !currentUrl.value) return
-  mediaRef.value.load()
-  mediaRef.value.currentTime = store.currentTime
-  if (store.isPlaying) {
-    try { await mediaRef.value.play() } catch (_) {}
-  }
-})
-
-// Initial start
-watch(() => store.playlist.length, async (len) => {
-  if (len > 0 && store.isPlaying) {
+// When artRef becomes available (initially)
+watch(artRef, async (el) => {
+  if (el && currentUrl.value) {
     await nextTick()
-    mediaRef.value?.load()
-    mediaRef.value?.play().catch(() => {})
+    createArtPlayer()
   }
-}, { immediate: true })
+})
 
-function onTimeUpdate() {
-  if (mediaRef.value) store.setCurrentTime(mediaRef.value.currentTime)
-}
-
-function onLoadedMetadata() {
-  if (mediaRef.value) {
-    store.setDuration(mediaRef.value.duration)
-    if (store.isPlaying) mediaRef.value.play().catch(() => {})
+// When playlist first gets items
+watch(() => store.playlist.length, async (len) => {
+  if (len > 0 && artRef.value && !art) {
+    await nextTick()
+    createArtPlayer()
   }
+})
+
+function togglePlayPause() {
+  if (!art) return
+  if (art.playing) art.pause()
+  else art.play().catch(() => {})
 }
 
-function onEnded() {
-  if (store.hasNext) {
-    store.next()
-  } else {
-    store.setIsPlaying(false)
-    store.setCurrentTime(0)
-  }
-}
-
-function onError() {
-  if (store.hasNext) store.next()
-}
-
-function onProgressClick(e: MouseEvent) {
-  const bar = e.currentTarget as HTMLElement
-  const newTime = (e.offsetX / bar.clientWidth) * store.duration
-  store.seek(newTime)
-  if (mediaRef.value) mediaRef.value.currentTime = newTime
-}
-
-function onProgressHover(e: MouseEvent) {
-  const bar = e.currentTarget as HTMLElement
-  const ratio = e.offsetX / bar.clientWidth
-  hoverPercent.value = ratio * 100
-  hoverTime.value = ratio * store.duration
-}
-
+onBeforeUnmount(() => {
+  if (art) { art.destroy(); art = null }
+})
 </script>
 
 <style scoped lang="scss">
+$sidebar-w: 220px;
+$topbar-h: 48px;
+$bar-body-h: 56px;
+$breakpoint: 768px;
+
 .media-player-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
+  left: $sidebar-w;  // desktop: start after sidebar
   right: 0;
   z-index: 200;
-  background: var(--el-bg-color);
-  border-top: 1px solid var(--el-border-color-light);
+  background: #fff;
+  border-top: 1px solid #efeff5;
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-
-  &.has-video {
-    top: 0;
-  }
-
-
 }
 
-/* Video area */
-.video-area {
+/* ArtPlayer container */
+.art-container {
+  width: 100%;
   background: #000;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-}
 
-.video-overlay-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
-  z-index: 1;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.video-area:hover .video-overlay-header {
-  opacity: 1;
-}
-
-.video-title {
-  color: #fff;
-  font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  margin-right: 8px;
-}
-
-.video-header-actions {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.overlay-btn {
-  color: #fff !important;
-  background: rgba(255,255,255,0.18) !important;
-  border: none !important;
-}
-
-.video-el {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: contain;
-}
-
-/* Progress bar */
-.progress-bar {
-  width: 100%;
-  height: 4px;
-  background: var(--el-fill-color);
-  cursor: pointer;
-  position: relative;
-  flex-shrink: 0;
-  transition: height 0.15s;
-
-  &:hover {
-    height: 6px;
+  /* Audio mode: collapsed to 0 height — ArtPlayer renders a mini audio bar natively */
+  &.audio-mode {
+    height: 48px;
+    :deep(.art-video-player) {
+      background: #1a1a1a;
+    }
   }
-}
 
-.progress-fill {
-  height: 100%;
-  background: var(--el-color-primary);
-  border-radius: 0 2px 2px 0;
-  transition: width 0.25s linear;
-  pointer-events: none;
-}
+  /* Video mode: fills from top of viewport to bar-body */
+  &.video-mode {
+    height: calc(100vh - #{$bar-body-h});
+  }
 
-.progress-tooltip {
-  position: absolute;
-  top: -24px;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  pointer-events: none;
-  white-space: nowrap;
+  /* Hidden when video is minimised */
+  &:not(.audio-mode):not(.video-mode) {
+    height: 0;
+    overflow: hidden;
+  }
 }
 
 /* Controls row */
@@ -365,22 +254,22 @@ function onProgressHover(e: MouseEvent) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 0 16px;
   gap: 12px;
   height: 56px;
+  flex-shrink: 0;
 }
 
 .track-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   flex: 1;
 }
 
-.media-icon {
-  font-size: 1.6rem;
-  color: var(--el-color-primary);
+.media-emoji {
+  font-size: 1.4rem;
   flex-shrink: 0;
 }
 
@@ -396,13 +285,13 @@ function onProgressHover(e: MouseEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 240px;
-  color: var(--el-text-color-primary);
+  max-width: 200px;
+  color: #333;
 }
 
 .time-text {
   font-size: 11px;
-  color: var(--el-text-color-secondary);
+  color: #888;
   margin-top: 1px;
 }
 
@@ -413,27 +302,73 @@ function onProgressHover(e: MouseEvent) {
   flex-shrink: 0;
 }
 
-.play-btn {
-  width: 40px !important;
-  height: 40px !important;
-  font-size: 1.1rem;
+.ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #555;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: rgba(0,0,0,0.07);
+    color: #18a058;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &.active {
+    color: #18a058;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
-.ctrl-btn {
-  border: none;
+.play-btn {
+  width: 40px;
+  height: 40px;
+  background: #18a058;
+  color: #fff;
+
+  &:hover {
+    background: #0e7a43;
+    color: #fff;
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.cast-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .bar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
   justify-content: flex-end;
 }
 
 .playlist-count {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: #888;
   white-space: nowrap;
 }
 
@@ -448,6 +383,19 @@ function onProgressHover(e: MouseEvent) {
   transform: translateY(100%);
 }
 
+/* ====== MOBILE ====== */
+@media (max-width: #{$breakpoint}) {
+  .media-player-bar {
+    left: 0;  // full width on mobile
+    top: $topbar-h;  // don't cover the topbar (hamburger)
+  }
+
+  .art-container.video-mode {
+    // subtract topbar height so video never covers hamburger
+    height: calc(100vh - #{$topbar-h} - #{$bar-body-h});
+  }
+}
+
 /* Cast popover */
 .cast-popover {
   padding: 2px 0;
@@ -456,15 +404,15 @@ function onProgressHover(e: MouseEvent) {
 .cast-popover-title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--el-text-color-secondary);
+  color: #888;
   padding: 0 4px 6px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid #eee;
   margin-bottom: 4px;
 }
 
 .cast-popover-msg {
   font-size: 13px;
-  color: var(--el-text-color-secondary);
+  color: #888;
   padding: 8px 4px;
   text-align: center;
 }
@@ -483,16 +431,22 @@ function onProgressHover(e: MouseEvent) {
   font-size: 13px;
   border-radius: 4px;
   cursor: pointer;
-  color: var(--el-text-color-primary);
+  color: #333;
 
   &:hover {
-    background: var(--el-fill-color-light);
+    background: #f5f5f7;
   }
 }
 
 .cast-device-icon {
   font-size: 16px;
-  color: var(--el-color-primary);
   flex-shrink: 0;
+}
+
+.cast-device-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
 }
 </style>

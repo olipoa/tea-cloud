@@ -10,8 +10,6 @@ html, body, #app {
 }
 
 body {
-  background: var(--el-bg-color-page);
-  color: var(--el-text-color-primary);
   overflow: hidden;
 }
 
@@ -24,14 +22,9 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--el-border-color-darker);
+  background: rgba(150, 150, 150, 0.4);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--el-text-color-secondary);
-}
-
-/* Element Plus table row hover */
-.el-table .el-table__row:hover > td {
-  cursor: pointer;
+  background: rgba(150, 150, 150, 0.7);
 }

@@ -9,19 +9,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vicons/ionicons5": "^0.13.0",
+    "artplayer": "^5.4.0",
     "axios": "^1.7.7",
-    "element-plus": "^2.8.4",
+    "naive-ui": "^2.44.1",
     "pdfjs-dist": "^4.7.76",
     "pinia": "^2.2.4",
     "vue": "^3.5.12",
-    "vue-router": "^4.4.5",
-    "@element-plus/icons-vue": "^2.3.1"
+    "vue-router": "^4.4.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.4",
+    "sass": "^1.80.4",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
-    "vue-tsc": "^2.1.6",
-    "sass": "^1.80.4"
+    "vue-tsc": "^2.1.6"
   }
 }

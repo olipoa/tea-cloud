@@ -1,27 +1,44 @@
 <template>
   <div class="home-page">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="logo">
-        <span class="logo-icon">🍵</span>
-        <span class="logo-text">Tea Cloud</span>
+    <!-- Desktop sidebar (>768px) -->
+    <aside class="sidebar" :class="{ open: drawerOpen }">
+      <div class="sidebar-inner">
+        <div class="logo">
+          <span class="logo-icon">🍵</span>
+          <span class="logo-text">Tea Cloud</span>
+        </div>
+        <n-divider style="margin: 8px 0" />
+        <PeerList />
       </div>
-      <el-divider style="margin: 8px 0" />
-      <PeerList />
     </aside>
 
-    <!-- Main content -->
-    <main class="main-content" :class="{ 'has-player': audioStore.playlist.length > 0 }">
-      <!-- Upload zone -->
-      <el-card class="upload-card" shadow="never">
-        <FileUpload />
-      </el-card>
+    <!-- Mobile overlay -->
+    <div v-if="drawerOpen" class="drawer-overlay" @click="drawerOpen = false" />
 
-      <!-- File explorer -->
-      <el-card class="explorer-card" shadow="never">
-        <FileExplorer @preview="openPreview" />
-      </el-card>
-    </main>
+    <!-- Main content -->
+    <div class="main-wrapper">
+      <!-- Mobile top bar -->
+      <header class="topbar">
+        <button class="hamburger" @click="drawerOpen = !drawerOpen" aria-label="菜单">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+          </svg>
+        </button>
+        <div class="topbar-logo">
+          <span>🍵</span>
+          <span class="topbar-title">Tea Cloud</span>
+        </div>
+      </header>
+
+      <main class="main-content" :class="{ 'has-player': audioStore.playlist.length > 0 }">
+        <n-card class="upload-card" :bordered="false">
+          <FileUpload />
+        </n-card>
+        <n-card class="explorer-card" :bordered="false">
+          <FileExplorer @preview="openPreview" />
+        </n-card>
+      </main>
+    </div>
 
     <!-- Preview dialog (non-audio) -->
     <FilePreview :item="previewItem" @close="previewItem = null" />
@@ -36,6 +53,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { NCard, NDivider } from 'naive-ui'
 import FileExplorer from '@/components/FileExplorer.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import FilePreview from '@/components/FilePreview.vue'
@@ -50,11 +68,11 @@ import { getCategory } from '@/utils/fileUtils'
 const store = useFileStore()
 const audioStore = useMediaPlayerStore()
 const previewItem = ref<FileInfo | null>(null)
+const drawerOpen = ref(false)
 
 function openPreview(item: FileInfo) {
   const cat = getCategory(item.ext)
   if (cat === 'audio' || cat === 'video') {
-    // Build playlist from all same-type media files in current folder
     const mediaFiles = store.items.filter(f => !f.isDir && getCategory(f.ext) === cat)
     const startIndex = mediaFiles.findIndex(f => f.path === item.path)
     audioStore.setPlaylist(mediaFiles, startIndex >= 0 ? startIndex : 0)
@@ -69,21 +87,31 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+$sidebar-w: 220px;
+$topbar-h: 48px;
+$breakpoint: 768px;
+
 .home-page {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--el-bg-color-page);
+  background: #f5f5f7;
 }
 
+/* ====== SIDEBAR ====== */
 .sidebar {
-  width: 220px;
+  width: $sidebar-w;
   flex-shrink: 0;
-  background: var(--el-bg-color);
-  border-right: 1px solid var(--el-border-color-light);
+  background: #fff;
+  border-right: 1px solid #efeff5;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  z-index: 300;
+  transition: transform 0.25s ease;
+}
+
+.sidebar-inner {
   padding: 12px 0;
 }
 
@@ -94,16 +122,61 @@ onMounted(() => {
   padding: 4px 16px 8px;
 }
 
-.logo-icon {
-  font-size: 1.6rem;
-}
-
+.logo-icon { font-size: 1.6rem; }
 .logo-text {
   font-size: 18px;
   font-weight: 700;
-  color: var(--el-text-color-primary);
+  color: #333;
 }
 
+/* ====== MAIN WRAPPER ====== */
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ====== TOP BAR (hidden on desktop) ====== */
+.topbar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  height: $topbar-h;
+  padding: 0 16px;
+  background: #fff;
+  border-bottom: 1px solid #efeff5;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.hamburger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #333;
+  &:hover { background: #f0f0f0; }
+}
+
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+}
+
+.topbar-title { font-size: 16px; }
+
+/* ====== MAIN CONTENT ====== */
 .main-content {
   flex: 1;
   overflow-y: auto;
@@ -119,12 +192,44 @@ onMounted(() => {
   }
 }
 
-.upload-card {
-  flex-shrink: 0;
+.upload-card { flex-shrink: 0; }
+
+/* ====== MOBILE OVERLAY ====== */
+.drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 299;
 }
 
-.explorer-card {
-  flex: 1;
-  min-height: 0;
+/* ====== RESPONSIVE ====== */
+@media (max-width: #{$breakpoint}) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 16px rgba(0,0,0,0.15);
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
+
+  .drawer-overlay {
+    display: block;
+  }
+
+  .topbar {
+    display: flex;
+    position: relative;
+    z-index: 250;  // above media-player-bar (200) so hamburger always accessible
+  }
+
+  .main-content {
+    padding: 12px;
+  }
 }
 </style>

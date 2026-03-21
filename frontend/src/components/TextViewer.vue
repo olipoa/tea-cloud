@@ -1,13 +1,15 @@
 <template>
   <div class="text-viewer">
-    <div v-if="loading" class="loading-hint" v-loading="true" element-loading-text="加载中…" style="min-height:120px" />
-    <pre v-else-if="content !== null" class="code-content">{{ content }}</pre>
-    <div v-else class="error-msg">文本加载失败</div>
+    <n-spin :show="loading" style="min-height: 120px;">
+      <pre v-if="content !== null" class="code-content">{{ content }}</pre>
+      <div v-else-if="!loading" class="error-msg">文本加载失败</div>
+    </n-spin>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
+import { NSpin } from 'naive-ui'
 
 const props = defineProps<{ url: string }>()
 
@@ -20,7 +22,6 @@ async function load() {
   try {
     const res = await fetch(props.url)
     if (!res.ok) throw new Error('fetch failed')
-    // Limit to 2 MB to prevent browser freeze
     const blob = await res.blob()
     if (blob.size > 2 * 1024 * 1024) {
       content.value = `[文件过大 (${(blob.size / 1024 / 1024).toFixed(1)} MB)，仅显示前 2 MB]\n\n` +
@@ -41,7 +42,7 @@ onMounted(load)
 
 <style scoped lang="scss">
 .text-viewer {
-  background: var(--el-fill-color-lighter);
+  background: #f7f7f7;
   border-radius: 6px;
   overflow: hidden;
 }
@@ -56,19 +57,13 @@ onMounted(load)
   word-break: break-all;
   overflow: auto;
   max-height: 75vh;
-  color: var(--el-text-color-primary);
-  background: var(--el-fill-color-lighter);
+  color: #333;
+  background: #f7f7f7;
 }
 
 .error-msg {
-  color: var(--el-color-danger);
+  color: #d03050;
   padding: 32px;
   text-align: center;
-}
-
-.loading-hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 </style>

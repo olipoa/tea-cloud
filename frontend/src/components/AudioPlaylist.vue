@@ -1,43 +1,37 @@
 <template>
-  <el-drawer
-    v-model="store.showPlaylist"
-    title="播放列表"
-    direction="rtl"
-    size="320px"
-    :append-to-body="true"
-  >
-    <div class="playlist">
-      <div
-        v-for="(track, idx) in store.playlist"
-        :key="track.path"
-        class="playlist-item"
-        :class="{ active: idx === store.currentIndex }"
-        @click="store.playAt(idx)"
-      >
-        <div class="item-icon">
-          <el-icon v-if="idx === store.currentIndex && store.isPlaying" class="playing-icon">
-            <VideoCamera v-if="getCategory(track.ext) === 'video'" />
-            <Headset v-else />
-          </el-icon>
-          <el-icon v-else class="idle-icon">
-            <VideoCamera v-if="getCategory(track.ext) === 'video'" />
-            <Headset v-else />
-          </el-icon>
+  <n-drawer v-model:show="store.showPlaylist" :width="320" placement="right">
+    <n-drawer-content title="播放列表" :native-scrollbar="false">
+      <div class="playlist">
+        <div
+          v-for="(track, idx) in store.playlist"
+          :key="track.path"
+          class="playlist-item"
+          :class="{ active: idx === store.currentIndex }"
+          @click="store.playAt(idx)"
+        >
+          <div class="item-icon">
+            <span v-if="idx === store.currentIndex && store.isPlaying" class="playing-icon">
+              {{ getCategory(track.ext) === 'video' ? '🎬' : '🎵' }}
+            </span>
+            <span v-else class="idle-icon">
+              {{ getCategory(track.ext) === 'video' ? '🎬' : '🎵' }}
+            </span>
+          </div>
+          <div class="item-info">
+            <span class="item-name" :title="track.name">{{ track.name }}</span>
+            <span class="item-size">{{ formatSize(track.size) }}</span>
+          </div>
+          <div v-if="idx === store.currentIndex" class="item-indicator" />
         </div>
-        <div class="item-info">
-          <span class="item-name" :title="track.name">{{ track.name }}</span>
-          <span class="item-size">{{ formatSize(track.size) }}</span>
-        </div>
-        <div v-if="idx === store.currentIndex" class="item-indicator" />
-      </div>
 
-      <el-empty v-if="store.playlist.length === 0" description="播放列表为空" />
-    </div>
-  </el-drawer>
+        <div v-if="store.playlist.length === 0" class="empty-hint">播放列表为空</div>
+      </div>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
-import { Headset, VideoCamera } from '@element-plus/icons-vue'
+import { NDrawer, NDrawerContent } from 'naive-ui'
 import { useMediaPlayerStore } from '@/stores/audioPlayer'
 import { formatSize, getCategory } from '@/utils/fileUtils'
 
@@ -62,13 +56,11 @@ const store = useMediaPlayerStore()
   position: relative;
   transition: background 0.15s;
 
-  &:hover {
-    background: var(--el-fill-color-light);
-  }
+  &:hover { background: #f5f5f7; }
 
   &.active {
-    background: var(--el-color-primary-light-9);
-    border-left: 3px solid var(--el-color-primary);
+    background: #e8f5ee;
+    border-left: 3px solid #18a058;
     padding-left: 9px;
   }
 }
@@ -83,13 +75,10 @@ const store = useMediaPlayerStore()
   justify-content: center;
 }
 
-.playing-icon {
-  color: var(--el-color-primary);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-
-.idle-icon {
-  color: var(--el-text-color-secondary);
+.playing-icon { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .item-info {
@@ -103,23 +92,31 @@ const store = useMediaPlayerStore()
 .item-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: #333;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.active .item-name {
-  color: var(--el-color-primary);
-}
+.active .item-name { color: #18a058; }
 
 .item-size {
   font-size: 11px;
-  color: var(--el-text-color-secondary);
+  color: #aaa;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+.item-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #18a058;
+  flex-shrink: 0;
+}
+
+.empty-hint {
+  text-align: center;
+  color: #aaa;
+  padding: 32px 16px;
+  font-size: 13px;
 }
 </style>

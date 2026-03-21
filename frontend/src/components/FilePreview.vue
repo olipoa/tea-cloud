@@ -1,12 +1,11 @@
 <template>
-  <el-dialog
-    v-model="visible"
+  <n-modal
+    v-model:show="visible"
     :title="item?.name"
-    width="90%"
-    :max-width="'900px'"
-    destroy-on-close
-    class="preview-dialog"
-    @closed="emit('close')"
+    preset="card"
+    style="max-width: 92vw; width: 900px;"
+    :auto-focus="false"
+    @after-leave="emit('close')"
   >
     <template v-if="item">
       <ImageViewer v-if="category === 'image'" :url="rawUrl" @close="visible = false" />
@@ -20,17 +19,20 @@
           {{ formatSize(item.size) }} · {{ formatDate(item.modTime) }}
         </span>
         <div class="footer-actions">
-          <el-button @click="visible = false">关闭</el-button>
-          <el-button type="primary" :icon="Download" @click="download">下载</el-button>
+          <n-button @click="visible = false">关闭</n-button>
+          <n-button type="primary" @click="download">
+            <template #icon><span>⬇</span></template>
+            下载
+          </n-button>
         </div>
       </div>
     </template>
-  </el-dialog>
+  </n-modal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Download } from '@element-plus/icons-vue'
+import { NModal, NButton } from 'naive-ui'
 import { type FileInfo, fileApi } from '@/services/api'
 import { getCategory, formatSize, formatDate } from '@/utils/fileUtils'
 import { useDownload } from '@/composables/useDownload'
@@ -43,9 +45,7 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 
 const visible = ref(false)
 
-watch(() => props.item, (val) => {
-  visible.value = !!val
-})
+watch(() => props.item, (val) => { visible.value = !!val })
 
 const category = computed(() => props.item ? getCategory(props.item.ext) : 'other')
 const rawUrl = computed(() => props.item ? fileApi.rawUrl(props.item.path) : '')
@@ -57,15 +57,6 @@ function download() {
 }
 </script>
 
-<style lang="scss">
-.preview-dialog {
-  .el-dialog__body {
-    padding: 0;
-    overflow: hidden;
-  }
-}
-</style>
-
 <style scoped lang="scss">
 .preview-footer {
   display: flex;
@@ -76,7 +67,7 @@ function download() {
 
 .file-meta {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: #aaa;
 }
 
 .footer-actions {
