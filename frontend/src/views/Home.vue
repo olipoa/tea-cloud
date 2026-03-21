@@ -19,9 +19,13 @@
     <div class="main-wrapper">
       <!-- Mobile top bar -->
       <header class="topbar">
-        <button class="hamburger" @click="drawerOpen = !drawerOpen" aria-label="菜单">
+        <button
+          class="hamburger"
+          @click="drawerOpen = !drawerOpen"
+          aria-label="菜单"
+        >
           <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
           </svg>
         </button>
         <div class="topbar-logo">
@@ -30,7 +34,10 @@
         </div>
       </header>
 
-      <main class="main-content" :class="{ 'has-player': audioStore.playlist.length > 0 }">
+      <main
+        class="main-content"
+        :class="{ 'has-player': audioStore.playlist.length > 0 }"
+      >
         <n-card class="upload-card" :bordered="false">
           <FileUpload />
         </n-card>
@@ -43,8 +50,13 @@
     <!-- Preview dialog (non-audio) -->
     <FilePreview :item="previewItem" @close="previewItem = null" />
 
-    <!-- Audio player bar (persistent bottom bar) -->
-    <AudioPlayerBar />
+    <!-- Player shell (persistent bottom bar) -->
+    <Transition name="player-slide">
+      <div v-if="audioStore.playlist.length > 0" class="player-shell">
+        <AudioPlayer v-if="!audioStore.isVideo" />
+        <VideoPlayer v-else />
+      </div>
+    </Transition>
 
     <!-- Audio playlist drawer -->
     <AudioPlaylist />
@@ -52,38 +64,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { NCard, NDivider } from 'naive-ui'
-import FileExplorer from '@/components/FileExplorer.vue'
-import FileUpload from '@/components/FileUpload.vue'
-import FilePreview from '@/components/FilePreview.vue'
-import PeerList from '@/components/PeerList.vue'
-import AudioPlayerBar from '@/components/AudioPlayerBar.vue'
-import AudioPlaylist from '@/components/AudioPlaylist.vue'
-import { type FileInfo } from '@/services/api'
-import { useFileStore } from '@/stores/file'
-import { useMediaPlayerStore } from '@/stores/audioPlayer'
-import { getCategory } from '@/utils/fileUtils'
+import AudioPlayer from "@/components/AudioPlayer.vue";
+import AudioPlaylist from "@/components/AudioPlaylist.vue";
+import FileExplorer from "@/components/FileExplorer.vue";
+import FilePreview from "@/components/FilePreview.vue";
+import FileUpload from "@/components/FileUpload.vue";
+import PeerList from "@/components/PeerList.vue";
+import VideoPlayer from "@/components/VideoPlayer.vue";
+import { type FileInfo } from "@/services/api";
+import { useMediaPlayerStore } from "@/stores/audioPlayer";
+import { useFileStore } from "@/stores/file";
+import { getCategory } from "@/utils/fileUtils";
+import { NCard, NDivider } from "naive-ui";
+import { onMounted, ref } from "vue";
 
-const store = useFileStore()
-const audioStore = useMediaPlayerStore()
-const previewItem = ref<FileInfo | null>(null)
-const drawerOpen = ref(false)
+const store = useFileStore();
+const audioStore = useMediaPlayerStore();
+const previewItem = ref<FileInfo | null>(null);
+const drawerOpen = ref(false);
 
 function openPreview(item: FileInfo) {
-  const cat = getCategory(item.ext)
-  if (cat === 'audio' || cat === 'video') {
-    const mediaFiles = store.items.filter(f => !f.isDir && getCategory(f.ext) === cat)
-    const startIndex = mediaFiles.findIndex(f => f.path === item.path)
-    audioStore.setPlaylist(mediaFiles, startIndex >= 0 ? startIndex : 0)
+  const cat = getCategory(item.ext);
+  if (cat === "audio" || cat === "video") {
+    const mediaFiles = store.items.filter(
+      (f) => !f.isDir && getCategory(f.ext) === cat,
+    );
+    const startIndex = mediaFiles.findIndex((f) => f.path === item.path);
+    audioStore.setPlaylist(mediaFiles, startIndex >= 0 ? startIndex : 0);
   } else {
-    previewItem.value = item
+    previewItem.value = item;
   }
 }
 
 onMounted(() => {
-  store.loadDir('.')
-})
+  store.loadDir(".");
+});
 </script>
 
 <style scoped lang="scss">
@@ -122,7 +137,9 @@ $breakpoint: 768px;
   padding: 4px 16px 8px;
 }
 
-.logo-icon { font-size: 1.6rem; }
+.logo-icon {
+  font-size: 1.6rem;
+}
 .logo-text {
   font-size: 18px;
   font-weight: 700;
@@ -162,7 +179,9 @@ $breakpoint: 768px;
   border-radius: 6px;
   cursor: pointer;
   color: #333;
-  &:hover { background: #f0f0f0; }
+  &:hover {
+    background: #f0f0f0;
+  }
 }
 
 .topbar-logo {
@@ -174,7 +193,9 @@ $breakpoint: 768px;
   color: #333;
 }
 
-.topbar-title { font-size: 16px; }
+.topbar-title {
+  font-size: 16px;
+}
 
 /* ====== MAIN CONTENT ====== */
 .main-content {
@@ -188,11 +209,36 @@ $breakpoint: 768px;
   transition: padding-bottom 0.3s ease;
 
   &.has-player {
-    padding-bottom: 88px;
+    padding-bottom: 120px;
   }
 }
 
-.upload-card { flex-shrink: 0; }
+/* ====== PLAYER SHELL ====== */
+.player-shell {
+  position: fixed;
+  bottom: 0;
+  left: $sidebar-w;
+  right: 0;
+  z-index: 200;
+  background: #fff;
+  border-top: 1px solid #efeff5;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Slide transition */
+.player-slide-enter-active,
+.player-slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.player-slide-enter-from,
+.player-slide-leave-to {
+  transform: translateY(100%);
+}
+
+.upload-card {
+  flex-shrink: 0;
+}
 
 /* ====== MOBILE OVERLAY ====== */
 .drawer-overlay {
@@ -211,7 +257,7 @@ $breakpoint: 768px;
     left: 0;
     bottom: 0;
     transform: translateX(-100%);
-    box-shadow: 4px 0 16px rgba(0,0,0,0.15);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
 
     &.open {
       transform: translateX(0);
@@ -225,7 +271,11 @@ $breakpoint: 768px;
   .topbar {
     display: flex;
     position: relative;
-    z-index: 250;  // above media-player-bar (200) so hamburger always accessible
+    z-index: 250; // above media-player-bar (200) so hamburger always accessible
+  }
+
+  .player-shell {
+    left: 0; // full width on mobile
   }
 
   .main-content {

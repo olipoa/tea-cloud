@@ -56,6 +56,15 @@ func main() {
 		api.DELETE("/files", fileHandler.DeleteFile)
 		api.POST("/dirs", fileHandler.CreateDir)
 
+		thumbnailHandler := handlers.NewThumbnailHandler(services.NewThumbnailService(fileSvc))
+		api.GET("/files/thumbnail", thumbnailHandler.GetThumbnail)
+
+		uploadHandler := handlers.NewUploadHandler(services.NewUploadService(fileSvc))
+		api.POST("/uploads", uploadHandler.InitUpload)
+		api.GET("/uploads/:id", uploadHandler.GetStatus)
+		api.PUT("/uploads/:id/chunk", uploadHandler.UploadChunk)
+		api.POST("/uploads/:id/complete", uploadHandler.CompleteUpload)
+
 		peerHandler := handlers.NewPeerHandler(discoverySvc)
 		api.GET("/peers", peerHandler.ListPeers)
 		api.GET("/self", handlers.SelfInfo(cfg.NodeName, cfg.Port))

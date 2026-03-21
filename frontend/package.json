@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@vicons/ionicons5": "^0.13.0",
+    "@worstone/vue-aplayer": "^1.0.8",
     "artplayer": "^5.4.0",
     "axios": "^1.7.7",
     "naive-ui": "^2.44.1",

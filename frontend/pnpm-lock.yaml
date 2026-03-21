@@ -11,6 +11,9 @@ importers:
       '@vicons/ionicons5':
         specifier: ^0.13.0
         version: 0.13.0
+      '@worstone/vue-aplayer':
+        specifier: ^1.0.8
+        version: 1.0.8(typescript@5.9.3)
       artplayer:
         specifier: ^5.4.0
         version: 5.4.0
@@ -597,6 +600,9 @@ packages:
   '@vue/shared@3.5.30':
     resolution: {integrity: sha512-YXgQ7JjaO18NeK2K9VTbDHaFy62WrObMa6XERNfNOkAhD1F1oDSf3ZJ7K6GqabZ0BvSDHajp8qfS5Sa2I9n8uQ==}
 
+  '@worstone/vue-aplayer@1.0.8':
+    resolution: {integrity: sha512-GE2irCqzNh6OPh5Z7BSS3ZAaX2eNfQaYSD+49v9OE0gHg5tRWQVNlz/Fmkk7se6fXvYCTJLG4ioAFuS2EeOEfw==}
+
   alien-signals@1.0.13:
     resolution: {integrity: sha512-OGj9yyTnJEttvzhTUWuscOvtqxq5vrhF7vL9oS0xJ2mK0ItPYP1/y+vCFebfxoEyAz0++1AIwJ5CMr+Fk3nDmg==}
 
@@ -852,6 +858,9 @@ packages:
 
   seemly@0.3.10:
     resolution: {integrity: sha512-2+SMxtG1PcsL0uyhkumlOU6Qo9TAQ/WyH7tthnPIOQB05/12jz9naq6GZ6iZ6ApVsO3rr2gsnTf3++OV63kE1Q==}
+
+  smoothscroll@0.4.0:
+    resolution: {integrity: sha512-sggQ3U2Un38b3+q/j1P4Y4fCboCtoUIaBYoge+Lb6Xg1H8RTIif/hugVr+ErMtIDpvBbhQfTjtiTeYAfbw1ZGQ==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -1327,6 +1336,13 @@ snapshots:
 
   '@vue/shared@3.5.30': {}
 
+  '@worstone/vue-aplayer@1.0.8(typescript@5.9.3)':
+    dependencies:
+      smoothscroll: 0.4.0
+      vue: 3.5.30(typescript@5.9.3)
+    transitivePeerDependencies:
+      - typescript
+
   alien-signals@1.0.13: {}
 
   artplayer@5.4.0:
@@ -1624,6 +1640,8 @@ snapshots:
       '@parcel/watcher': 2.5.6
 
   seemly@0.3.10: {}
+
+  smoothscroll@0.4.0: {}
 
   source-map-js@1.2.1: {}
 

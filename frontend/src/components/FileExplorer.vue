@@ -9,7 +9,11 @@
           @click="store.navigateUp()"
           title="返回上级"
         >
-          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <path
+              d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+            />
+          </svg>
         </button>
         <n-breadcrumb class="breadcrumb">
           <n-breadcrumb-item
@@ -23,33 +27,73 @@
       </div>
 
       <div class="actions">
-        <button class="icon-btn" @click="store.refresh()" :disabled="store.loading" title="刷新">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" :class="{ spinning: store.loading }">
-            <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        <button
+          class="icon-btn"
+          @click="store.refresh()"
+          :disabled="store.loading"
+          title="刷新"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            width="18"
+            height="18"
+            :class="{ spinning: store.loading }"
+          >
+            <path
+              d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+            />
           </svg>
         </button>
         <n-button size="small" @click="showMkdir = true">
           <template #icon>
-            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20 6h-8l-2-2H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+              <path
+                d="M20 6h-8l-2-2H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"
+              />
+            </svg>
           </template>
           新建文件夹
         </n-button>
         <n-button-group size="small">
-          <n-button :type="store.viewMode === 'list' ? 'primary' : 'default'" @click="store.viewMode = 'list'" title="列表视图">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M3 13h2v-2H3zm0 4h2v-2H3zm0-8h2V7H3zm4 4h14v-2H7zm0 4h14v-2H7zM7 7v2h14V7z"/></svg>
+          <n-button
+            :type="store.viewMode === 'list' ? 'primary' : 'default'"
+            @click="store.viewMode = 'list'"
+            title="列表视图"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+              <path
+                d="M3 13h2v-2H3zm0 4h2v-2H3zm0-8h2V7H3zm4 4h14v-2H7zm0 4h14v-2H7zM7 7v2h14V7z"
+              />
+            </svg>
           </n-button>
-          <n-button :type="store.viewMode === 'grid' ? 'primary' : 'default'" @click="store.viewMode = 'grid'" title="网格视图">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z"/></svg>
+          <n-button
+            :type="store.viewMode === 'grid' ? 'primary' : 'default'"
+            @click="store.viewMode = 'grid'"
+            title="网格视图"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+              <path
+                d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z"
+              />
+            </svg>
           </n-button>
         </n-button-group>
       </div>
     </div>
 
     <!-- Error -->
-    <n-alert v-if="store.error" type="error" :title="store.error" closable @after-leave="store.error = null" style="margin-bottom:12px" />
+    <n-alert
+      v-if="store.error"
+      type="error"
+      :title="store.error"
+      closable
+      @after-leave="store.error = null"
+      style="margin-bottom: 12px"
+    />
 
     <!-- Loading spin -->
-    <n-spin :show="store.loading" style="min-height: 80px;">
+    <n-spin :show="store.loading" style="min-height: 80px">
       <!-- Grid view -->
       <div v-if="store.viewMode === 'grid'" class="grid-view">
         <div
@@ -61,21 +105,52 @@
           :class="{ selected: selected?.path === item.path }"
         >
           <div class="grid-icon">
-            <span class="icon-large">{{ item.isDir ? '📁' : fileEmoji(item.ext) }}</span>
+            <img
+              v-if="
+                !item.isDir &&
+                (getCategory(item.ext) === 'video' ||
+                  getCategory(item.ext) === 'image') &&
+                !failedThumbs.has(item.path)
+              "
+              class="grid-thumb"
+              loading="lazy"
+              :src="
+                getCategory(item.ext) === 'video'
+                  ? fileApi.thumbnailUrl(item.path)
+                  : fileApi.rawUrl(item.path)
+              "
+              @error="() => failedThumbs.add(item.path)"
+              alt=""
+            />
+            <span v-else class="icon-large">{{
+              item.isDir ? "📁" : fileEmoji(item.ext)
+            }}</span>
           </div>
           <div class="grid-name" :title="item.name">{{ item.name }}</div>
-          <div class="grid-size" v-if="!item.isDir">{{ formatSize(item.size) }}</div>
+          <div class="grid-size" v-if="!item.isDir">
+            {{ formatSize(item.size) }}
+          </div>
           <div class="grid-actions">
-            <button v-if="!item.isDir" class="icon-btn-sm" title="下载" @click.stop="download(item)">⬇</button>
+            <n-button
+              v-if="!item.isDir"
+              size="tiny"
+              @click.stop="download(item)"
+              >下载</n-button
+            >
             <n-popconfirm @positive-click="deleteItem(item)">
               <template #trigger>
-                <button class="icon-btn-sm danger" title="删除" @click.stop>🗑</button>
+                <n-button size="tiny" type="error" @click.stop>删除</n-button>
               </template>
               确认删除吗？
             </n-popconfirm>
           </div>
         </div>
-        <div v-if="!store.loading && store.items.length === 0" class="empty-dir">空文件夹</div>
+        <div
+          v-if="!store.loading && store.items.length === 0"
+          class="empty-dir"
+        >
+          空文件夹
+        </div>
       </div>
 
       <!-- List view -->
@@ -95,110 +170,161 @@
           @click="handleSingleClick(item)"
         >
           <span class="col-name">
-            <span class="file-icon">{{ item.isDir ? '📁' : fileEmoji(item.ext) }}</span>
+            <span class="file-icon">{{
+              item.isDir ? "📁" : fileEmoji(item.ext)
+            }}</span>
             <span class="file-name" :title="item.name">{{ item.name }}</span>
           </span>
-          <span class="col-size muted">{{ item.isDir ? '—' : formatSize(item.size) }}</span>
+          <span class="col-size muted">{{
+            item.isDir ? "—" : formatSize(item.size)
+          }}</span>
           <span class="col-date muted">{{ formatDate(item.modTime) }}</span>
           <span class="col-actions" @click.stop>
-            <button v-if="!item.isDir" class="icon-btn-sm" title="下载" @click="download(item)">⬇</button>
-            <button v-if="!item.isDir && canPreview(item.ext)" class="icon-btn-sm" title="预览" @click="$emit('preview', item)">👁</button>
+            <n-button v-if="!item.isDir" size="tiny" @click="download(item)"
+              >下载</n-button
+            >
+            <n-button
+              v-if="!item.isDir && canPreview(item.ext)"
+              size="tiny"
+              secondary
+              @click="$emit('preview', item)"
+              >预览</n-button
+            >
             <n-popconfirm @positive-click="deleteItem(item)">
               <template #trigger>
-                <button class="icon-btn-sm danger" title="删除">🗑</button>
+                <n-button size="tiny" type="error">删除</n-button>
               </template>
               确认删除吗？
             </n-popconfirm>
           </span>
         </div>
-        <div v-if="!store.loading && store.items.length === 0" class="empty-dir">空文件夹</div>
+        <div
+          v-if="!store.loading && store.items.length === 0"
+          class="empty-dir"
+        >
+          空文件夹
+        </div>
       </div>
     </n-spin>
 
     <!-- Mkdir dialog -->
-    <n-modal v-model:show="showMkdir" preset="dialog" title="新建文件夹" @after-leave="mkdirName = ''">
-      <n-input v-model:value="mkdirName" placeholder="文件夹名称" @keyup.enter="doMkdir" autofocus />
+    <n-modal
+      v-model:show="showMkdir"
+      preset="dialog"
+      title="新建文件夹"
+      @after-leave="mkdirName = ''"
+    >
+      <n-input
+        v-model:value="mkdirName"
+        placeholder="文件夹名称"
+        @keyup.enter="doMkdir"
+        autofocus
+      />
       <template #action>
         <n-button @click="showMkdir = false">取消</n-button>
-        <n-button type="primary" @click="doMkdir" :disabled="!mkdirName.trim()">创建</n-button>
+        <n-button type="primary" @click="doMkdir" :disabled="!mkdirName.trim()"
+          >创建</n-button
+        >
       </template>
     </n-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { NButton, NButtonGroup, NBreadcrumb, NBreadcrumbItem, NAlert, NSpin, NModal, NInput, NPopconfirm } from 'naive-ui'
-import { useMessage } from 'naive-ui'
-import { useFileStore } from '@/stores/file'
-import { fileApi } from '@/services/api'
-import { type FileInfo } from '@/services/api'
-import { formatSize, formatDate, canPreview, getCategory } from '@/utils/fileUtils'
-import { useDownload } from '@/composables/useDownload'
+import { useDownload } from "@/composables/useDownload";
+import { fileApi, type FileInfo } from "@/services/api";
+import { useFileStore } from "@/stores/file";
+import {
+  canPreview,
+  formatDate,
+  formatSize,
+  getCategory,
+} from "@/utils/fileUtils";
+import {
+  NAlert,
+  NBreadcrumb,
+  NBreadcrumbItem,
+  NButton,
+  NButtonGroup,
+  NInput,
+  NModal,
+  NPopconfirm,
+  NSpin,
+  useMessage,
+} from "naive-ui";
+import { reactive, ref } from "vue";
 
 const emit = defineEmits<{
-  (e: 'preview', item: FileInfo): void
-}>()
+  (e: "preview", item: FileInfo): void;
+}>();
 
-const store = useFileStore()
-const message = useMessage()
-const showMkdir = ref(false)
-const mkdirName = ref('')
-const selected = ref<FileInfo | null>(null)
+const store = useFileStore();
+const message = useMessage();
+const showMkdir = ref(false);
+const mkdirName = ref("");
+const selected = ref<FileInfo | null>(null);
+const failedThumbs = reactive(new Set<string>());
 
 function handleOpen(item: FileInfo) {
   if (item.isDir) {
-    store.navigateTo(item.path)
+    store.navigateTo(item.path);
   } else if (canPreview(item.ext)) {
-    emit('preview', item)
+    emit("preview", item);
   } else {
-    download(item)
+    download(item);
   }
 }
 
 function handleSingleClick(item: FileInfo) {
-  selected.value = item
+  selected.value = item;
 }
 
 function download(item: FileInfo) {
-  const { download: dl } = useDownload()
-  dl(item.path, item.name)
+  const { download: dl } = useDownload();
+  dl(item.path, item.name);
 }
 
 async function deleteItem(item: FileInfo) {
   try {
-    await store.deleteItem(item.path)
-    message.success(`已删除 ${item.name}`)
+    await store.deleteItem(item.path);
+    message.success(`已删除 ${item.name}`);
   } catch {
-    message.error('删除失败')
+    message.error("删除失败");
   }
 }
 
 async function doMkdir() {
-  const name = mkdirName.value.trim()
-  if (!name) return
+  const name = mkdirName.value.trim();
+  if (!name) return;
   try {
-    await store.createDir(name)
-    message.success(`文件夹 "${name}" 已创建`)
-    showMkdir.value = false
-    mkdirName.value = ''
+    await store.createDir(name);
+    message.success(`文件夹 "${name}" 已创建`);
+    showMkdir.value = false;
+    mkdirName.value = "";
   } catch {
-    message.error('创建文件夹失败')
+    message.error("创建文件夹失败");
   }
 }
 
 function fileEmoji(ext: string): string {
-  const cat = getCategory(ext)
+  const cat = getCategory(ext);
   const map: Record<string, string> = {
-    video: '🎬', audio: '🎵', image: '🖼️', pdf: '📄',
-    text: '📝', archive: '🗜️', other: '📦',
-  }
-  return map[cat] ?? '📦'
+    video: "🎬",
+    audio: "🎵",
+    image: "🖼️",
+    pdf: "📄",
+    text: "📝",
+    archive: "🗜️",
+    other: "📦",
+  };
+  return map[cat] ?? "📦";
 }
 </script>
 
 <style scoped lang="scss">
-.file-explorer { width: 100%; }
+.file-explorer {
+  width: 100%;
+}
 
 .toolbar {
   display: flex;
@@ -242,8 +368,14 @@ function fileEmoji(ext: string): string {
   border-radius: 4px;
   cursor: pointer;
   color: #555;
-  &:hover { background: #f0f0f0; color: #18a058; }
-  &:disabled { opacity: 0.4; cursor: not-allowed; }
+  &:hover {
+    background: #f0f0f0;
+    color: #18a058;
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 }
 
 .icon-btn-sm {
@@ -257,12 +389,22 @@ function fileEmoji(ext: string): string {
   border-radius: 3px;
   cursor: pointer;
   font-size: 13px;
-  &:hover { background: #f0f0f0; }
-  &.danger:hover { background: #fff0f0; }
+  &:hover {
+    background: #f0f0f0;
+  }
+  &.danger:hover {
+    background: #fff0f0;
+  }
 }
 
-.spinning { animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* Grid view */
 .grid-view {
@@ -279,14 +421,36 @@ function fileEmoji(ext: string): string {
   text-align: center;
   cursor: pointer;
   position: relative;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 
-  &:hover { border-color: #18a058; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  &.selected { border-color: #18a058; background: #e8f5ee; }
+  &:hover {
+    border-color: #18a058;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  &.selected {
+    border-color: #18a058;
+    background: #e8f5ee;
+  }
 }
 
-.grid-icon { margin-bottom: 6px; }
-.icon-large { font-size: 2.5rem; line-height: 1; }
+.grid-icon {
+  margin-bottom: 6px;
+}
+.icon-large {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.grid-thumb {
+  width: 80px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+  margin: 0 auto;
+}
 
 .grid-name {
   font-size: 12px;
@@ -299,7 +463,10 @@ function fileEmoji(ext: string): string {
   margin-bottom: 4px;
 }
 
-.grid-size { font-size: 11px; color: #aaa; }
+.grid-size {
+  font-size: 11px;
+  color: #aaa;
+}
 
 .grid-actions {
   position: absolute;
@@ -309,15 +476,19 @@ function fileEmoji(ext: string): string {
   transition: opacity 0.2s;
   display: flex;
   gap: 2px;
-  .grid-item:hover & { opacity: 1; }
+  .grid-item:hover & {
+    opacity: 1;
+  }
 }
 
 /* List view */
-.list-view { width: 100%; }
+.list-view {
+  width: 100%;
+}
 
 .list-header {
   display: grid;
-  grid-template-columns: 1fr 100px 160px 100px;
+  grid-template-columns: 1fr 100px 160px 160px;
   padding: 6px 10px;
   font-size: 12px;
   color: #aaa;
@@ -327,7 +498,7 @@ function fileEmoji(ext: string): string {
 
 .list-row {
   display: grid;
-  grid-template-columns: 1fr 100px 160px 100px;
+  grid-template-columns: 1fr 100px 160px 160px;
   padding: 8px 10px;
   border-radius: 6px;
   cursor: pointer;
@@ -335,8 +506,12 @@ function fileEmoji(ext: string): string {
   transition: background 0.15s;
   min-height: 44px;
 
-  &:hover { background: #f5f5f7; }
-  &.selected { background: #e8f5ee; }
+  &:hover {
+    background: #f5f5f7;
+  }
+  &.selected {
+    background: #e8f5ee;
+  }
 }
 
 .col-name {
@@ -346,7 +521,10 @@ function fileEmoji(ext: string): string {
   min-width: 0;
 }
 
-.file-icon { font-size: 1.2rem; flex-shrink: 0; }
+.file-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
 .file-name {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -354,17 +532,20 @@ function fileEmoji(ext: string): string {
   font-size: 13px;
 }
 
-.col-size, .col-date {
+.col-size,
+.col-date {
   font-size: 12px;
 }
 
 .col-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
-.muted { color: #aaa; }
+.muted {
+  color: #aaa;
+}
 
 .empty-dir {
   text-align: center;
@@ -375,8 +556,14 @@ function fileEmoji(ext: string): string {
 
 /* Mobile: hide date column */
 @media (max-width: 600px) {
-  .list-header { grid-template-columns: 1fr 80px 80px; }
-  .list-row { grid-template-columns: 1fr 80px 80px; }
-  .col-date { display: none; }
+  .list-header {
+    grid-template-columns: 1fr 80px 120px;
+  }
+  .list-row {
+    grid-template-columns: 1fr 80px 120px;
+  }
+  .col-date {
+    display: none;
+  }
 }
 </style>
