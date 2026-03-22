@@ -1,10 +1,16 @@
 <template>
-  <div class="file-explorer">
+  <div
+    class="file-explorer"
+    :class="{ 'is-dragover': isDragover }"
+    @dragover.prevent="isDragover = true"
+    @dragleave.prevent="isDragover = false"
+    @drop.prevent="handleDrop"
+  >
     <!-- Search bar -->
     <div class="search-bar">
       <t-input
         v-model="searchInput"
-        placeholder="搜索当前目录（递归）…"
+        placeholder="搜索当前目录"
         clearable
         @enter="doSearch"
         @clear="cancelSearch"
@@ -101,6 +107,31 @@
       >
         <template #icon><t-icon name="folder-add" /></template>
       </t-button>
+      <t-dropdown
+        :options="uploadOptions"
+        trigger="click"
+        @click="onUploadMenuClick"
+        placement="bottom-right"
+      >
+        <t-button size="small" variant="text" shape="square" title="上传">
+          <template #icon><t-icon name="upload" /></template>
+        </t-button>
+      </t-dropdown>
+      <input
+        ref="fileInput"
+        type="file"
+        multiple
+        style="display: none"
+        @change="onFilesChange"
+      />
+      <input
+        ref="folderInput"
+        type="file"
+        webkitdirectory
+        multiple
+        style="display: none"
+        @change="onFilesChange"
+      />
     </div>
 
     <!-- Error -->
@@ -210,31 +241,19 @@
 
   <!-- Detail drawer -->
   <FileDetailDrawer v-model="detailVisible" :item="actionTarget" />
-
-  <!-- Panel stack (folder drill-down overlay) -->
-  <template v-for="(panel, i) in panelStack" :key="panel.path + i">
-    <FilePanel
-      :visible="i === panelStack.length - 1"
-      :root-path="panel.path"
-      :view-mode="store.viewMode"
-      @close="panelStack.splice(i)"
-      @preview="(item: FileInfo, sib: FileInfo[]) => emit('preview', item, sib)"
-    />
-  </template>
 </template>
 
 <script setup lang="ts">
+import { useFileActions } from "@/composables/useFileActions";
+import { useUpload } from "@/composables/useUpload";
 import type { FileInfo } from "@/services/api";
-import { fileApi } from "@/services/api";
 import { useFileStore } from "@/stores/file";
 import { useTransferStore } from "@/stores/transfer";
 import { getCategory } from "@/utils/fileUtils";
-import { MessagePlugin } from "tdesign-vue-next";
-import { ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import FileDetailDrawer from "./FileDetailDrawer.vue";
 import FileGridView from "./FileGridView.vue";
 import FileListView from "./FileListView.vue";
-import FilePanel from "./FilePanel.vue";
 import FolderPicker from "./FolderPicker.vue";
 
 const emit = defineEmits<{
@@ -244,9 +263,61 @@ const emit = defineEmits<{
 const store = useFileStore();
 const transferStore = useTransferStore();
 
+// ── Upload ─────────────────────────────────────────────────────────────────
+const {
+  fileInput,
+  folderInput,
+  isDragover,
+  triggerFileUpload,
+  triggerFolderUpload,
+  onFilesChange,
+  handleDrop,
+  handlePaste,
+} = useUpload();
+
+const uploadOptions = [
+  { content: "上传文件", value: "file" },
+  { content: "上传文件夹", value: "folder" },
+];
+function onUploadMenuClick({ value }: { value: string }) {
+  if (value === "file") triggerFileUpload();
+  else triggerFolderUpload();
+}
+
+// Paste upload — only when no modal is open
+function onDocumentPaste(e: ClipboardEvent) {
+  if (renameVisible.value || showMkdir.value || deleteVisible.value) return;
+  handlePaste(e);
+}
+onMounted(() => document.addEventListener("paste", onDocumentPaste));
+onUnmounted(() => document.removeEventListener("paste", onDocumentPaste));
+
+// ── File actions ───────────────────────────────────────────────────────────
+const {
+  actionTarget,
+  renameVisible,
+  renameName,
+  startRename,
+  doRename,
+  showMkdir,
+  mkdirName,
+  doMkdir,
+  pickerVisible,
+  pickerMode,
+  startCopy,
+  startMove,
+  onPickerSelect,
+  deleteVisible,
+  confirmDelete,
+  doDelete,
+  detailVisible,
+  openDetail,
+} = useFileActions();
+
+// ── Search & sort ──────────────────────────────────────────────────────────
 const searchInput = ref("");
 function doSearch() {
-  if (searchInput.value.trim()) store.search(searchInput.value.trim());
+  store.search(searchInput.value.trim());
 }
 function cancelSearch() {
   store.clearSearch();
@@ -274,11 +345,12 @@ function toggleSortOrder() {
   store.sortOrder = store.sortOrder === "desc" ? "asc" : "desc";
 }
 
+// ── File open / download ───────────────────────────────────────────────────
 const selected = ref<FileInfo | null>(null);
 
 function handleOpen(item: FileInfo) {
   if (item.isDir) {
-    panelStack.value.push({ path: item.path });
+    store.navigateTo(item.path);
   } else if (
     ["video", "audio", "image", "pdf", "text"].includes(getCategory(item.ext))
   ) {
@@ -291,94 +363,6 @@ function handleDownload(item: FileInfo) {
   if (item.isDir) transferStore.addFolderDownload(item.path);
   else transferStore.addDownload(item.path, item.name, item.size);
 }
-
-const renameVisible = ref(false);
-const renameName = ref("");
-const actionTarget = ref<FileInfo | null>(null);
-
-function startRename(item: FileInfo) {
-  actionTarget.value = item;
-  renameName.value = item.name;
-  renameVisible.value = true;
-}
-async function doRename() {
-  if (!actionTarget.value || !renameName.value.trim()) return;
-  try {
-    await fileApi.rename(actionTarget.value.path, renameName.value.trim());
-    MessagePlugin.success("重命名成功");
-    renameVisible.value = false;
-    store.refresh();
-  } catch {
-    MessagePlugin.error("重命名失败");
-  }
-}
-
-const showMkdir = ref(false);
-const mkdirName = ref("");
-async function doMkdir() {
-  const name = mkdirName.value.trim();
-  if (!name) return;
-  try {
-    await store.createDir(name);
-    MessagePlugin.success("文件夹创建成功");
-    showMkdir.value = false;
-    mkdirName.value = "";
-  } catch {
-    MessagePlugin.error("创建失败");
-  }
-}
-
-const pickerVisible = ref(false);
-const pickerMode = ref<"copy" | "move">("copy");
-function startCopy(item: FileInfo) {
-  actionTarget.value = item;
-  pickerMode.value = "copy";
-  pickerVisible.value = true;
-}
-function startMove(item: FileInfo) {
-  actionTarget.value = item;
-  pickerMode.value = "move";
-  pickerVisible.value = true;
-}
-async function onPickerSelect(destPath: string) {
-  if (!actionTarget.value) return;
-  try {
-    if (pickerMode.value === "copy") {
-      await fileApi.copy(actionTarget.value.path, destPath);
-      MessagePlugin.success("复制成功");
-    } else {
-      await fileApi.move(actionTarget.value.path, destPath);
-      MessagePlugin.success("移动成功");
-    }
-    store.refresh();
-  } catch {
-    MessagePlugin.error(pickerMode.value === "copy" ? "复制失败" : "移动失败");
-  }
-}
-
-const deleteVisible = ref(false);
-function confirmDelete(item: FileInfo) {
-  actionTarget.value = item;
-  deleteVisible.value = true;
-}
-async function doDelete() {
-  if (!actionTarget.value) return;
-  try {
-    await store.deleteItem(actionTarget.value.path);
-    MessagePlugin.success("删除成功");
-    deleteVisible.value = false;
-  } catch {
-    MessagePlugin.error("删除失败");
-  }
-}
-
-const detailVisible = ref(false);
-function openDetail(item: FileInfo) {
-  actionTarget.value = item;
-  detailVisible.value = true;
-}
-
-const panelStack = ref<{ path: string }[]>([]);
 </script>
 
 <style scoped lang="scss">
@@ -386,9 +370,14 @@ const panelStack = ref<{ path: string }[]>([]);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px;
-  height: 100%;
-  overflow: hidden;
+  // Allow natural height so the parent scroll container (.main-content) handles scrolling
+  position: relative;
+  transition: outline 0.15s;
+  &.is-dragover {
+    outline: 2px dashed var(--td-brand-color);
+    outline-offset: -2px;
+    border-radius: var(--td-radius-default);
+  }
 }
 .search-bar {
   display: flex;

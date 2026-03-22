@@ -38,10 +38,6 @@
       class="main-content"
       :class="{ 'has-player': audioStore.playlist.length > 0 }"
     >
-      <!-- Upload trigger row -->
-      <div class="upload-row">
-        <FileUpload />
-      </div>
       <!-- File explorer -->
       <FileExplorer @preview="openPreview" />
     </main>
@@ -81,7 +77,6 @@ import AudioPlaylist from "@/components/AudioPlaylist.vue";
 import ComicViewer from "@/components/ComicViewer.vue";
 import FileExplorer from "@/components/FileExplorer.vue";
 import FilePreview from "@/components/FilePreview.vue";
-import FileUpload from "@/components/FileUpload.vue";
 import VideoPlayer from "@/components/VideoPlayer.vue";
 import { useTheme } from "@/composables/useTheme";
 import {
@@ -244,7 +239,7 @@ $breakpoint: 768px;
 .main-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -254,10 +249,6 @@ $breakpoint: 768px;
   &.has-player {
     padding-bottom: 120px;
   }
-}
-
-.upload-row {
-  flex-shrink: 0;
 }
 
 /* ====== PLAYER SHELL ====== */
@@ -289,7 +280,7 @@ $breakpoint: 768px;
   }
 
   .main-content {
-    padding: 12px;
+    padding: 8px;
   }
 }
 </style>

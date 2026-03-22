@@ -246,19 +246,25 @@ func (s *UploadService) cleanLoop() {
 
 func (s *UploadService) cleanSessions() {
 	cutoff := time.Now().Add(-24 * time.Hour)
+
+	// Collect expired sessions under lock, then release before doing disk I/O
+	// to avoid blocking concurrent Init/SaveChunk requests.
+	type expiredEntry struct {
+		id      string
+		tempDir string
+	}
 	s.mu.Lock()
-	var expired []string
+	var toClean []expiredEntry
 	for id, sess := range s.sessions {
 		if sess.CreatedAt.Before(cutoff) {
-			expired = append(expired, id)
-		}
-	}
-	for _, id := range expired {
-		if sess, ok := s.sessions[id]; ok {
-			os.RemoveAll(sess.TempDir)
+			toClean = append(toClean, expiredEntry{id, sess.TempDir})
 			delete(s.sessions, id)
-			log.Printf("[INFO] cleaned expired upload session: %s", id)
 		}
 	}
 	s.mu.Unlock()
+
+	for _, entry := range toClean {
+		os.RemoveAll(entry.tempDir)
+		log.Printf("[INFO] cleaned expired upload session: %s", entry.id)
+	}
 }

@@ -17,8 +17,8 @@ export const useFileStore = defineStore("file", () => {
   );
 
   // Sort & filter
-  const sortField = ref<SortField>("modTime");
-  const sortOrder = ref<SortOrder>("desc");
+  const sortField = ref<SortField>("name");
+  const sortOrder = ref<SortOrder>("asc");
   const filterType = ref<string>("all");
 
   // Search

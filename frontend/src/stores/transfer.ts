@@ -67,7 +67,12 @@ export const useTransferStore = defineStore("transfer", () => {
 
   function addFolderUpload(files: File[], destBasePath: string) {
     for (const file of files) {
-      const relPath = (file as any).webkitRelativePath as string;
+      const relPath = (file as any).webkitRelativePath as string | undefined;
+      if (!relPath) {
+        // Fallback: upload file without folder structure
+        addUpload(file, destBasePath);
+        continue;
+      }
       // e.g., "folderName/subdir/file.txt"
       const parts = relPath.split("/");
       parts.pop(); // remove filename
@@ -141,8 +146,10 @@ export const useTransferStore = defineStore("transfer", () => {
       uploadRunning < maxUploadConcurrency.value &&
       uploadQueue.length > 0
     ) {
-      const task = uploadQueue.shift()!;
-      if (task.status !== "pending") continue;
+      const queued = uploadQueue.shift()!;
+      // Look up the reactive version from tasks.value so Vue tracks all mutations
+      const task = tasks.value.find((t) => t.id === queued.id);
+      if (!task || task.status !== "pending") continue;
       uploadRunning++;
       task.status = "running";
       runUploadTask(task).finally(() => {
@@ -157,8 +164,10 @@ export const useTransferStore = defineStore("transfer", () => {
       downloadRunning < maxDownloadConcurrency.value &&
       downloadQueue.length > 0
     ) {
-      const task = downloadQueue.shift()!;
-      if (task.status !== "pending") continue;
+      const queued = downloadQueue.shift()!;
+      // Look up the reactive version from tasks.value so Vue tracks all mutations
+      const task = tasks.value.find((t) => t.id === queued.id);
+      if (!task || task.status !== "pending") continue;
       downloadRunning++;
       task.status = "running";
       runDownloadTask(task).finally(() => {
@@ -206,6 +215,7 @@ export const useTransferStore = defineStore("transfer", () => {
     } catch (e: unknown) {
       task.status = "failed";
       task.error = e instanceof Error ? e.message : "上传失败";
+      console.error(`[upload] failed: ${task.name}`, e);
     }
   }
 

@@ -110,7 +110,7 @@ const swiperModules = [Keyboard, Mousewheel, Zoom, Autoplay];
 
 // 将 autoplay 参数固定，通过实例方法控制 start/stop
 const autoplayProp = {
-  delay: 3000,
+  delay: 6000,
   disableOnInteraction: true,
   stopOnLastSlide: false,
 };
@@ -133,7 +133,7 @@ function showControls() {
 
 // ─── Autoplay ────────────────────────────────────────────────────────────────
 const autoplayEnabled = ref(false);
-const autoplaySeconds = ref(3);
+const autoplaySeconds = ref(6);
 
 function toggleAutoplay() {
   if (!swiperInstance.value) return;
