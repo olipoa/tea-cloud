@@ -1,7 +1,7 @@
 <template>
   <div class="audio-player">
-    <!-- Hidden audio element -->
-    <audio
+    <!-- 使用 video 标签测试音频播放 -->
+    <video
       ref="audioEl"
       :src="currentUrl"
       :autoplay="store.isPlaying"
@@ -16,6 +16,7 @@
       @canplay="onCanPlay"
       @stalled="onStalled"
       @error="onError"
+      style="display: none"
     />
 
     <div class="player-inner">

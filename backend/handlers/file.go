@@ -257,28 +257,27 @@ func StaticFileMiddleware(svc *services.FileService) gin.HandlerFunc {
 			return
 		}
 
-		f, err := os.Open(abs)
+		// 先验证文件存在且不是目录
+		stat, err := os.Stat(abs)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
-		defer f.Close()
-
-		stat, err := f.Stat()
-		if err != nil || stat.IsDir() {
+		if stat.IsDir() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "not a file"})
 			return
 		}
 
+		// 设置 Content-Type
 		info, _ := svc.GetFileInfo(relPath)
 		if info != nil && info.MIME != "" {
 			c.Header("Content-Type", info.MIME)
 		}
-		// http.ServeContent 会自动处理:
-		// - Range 请求（返回 206 Partial Content）
-		// - 正确的 Content-Length（整个文件或部分范围）
-		// - Accept-Ranges 头
-		// 不要手动设置 Content-Length，否则会破坏 Range 请求
-		http.ServeContent(c.Writer, c.Request, stat.Name(), stat.ModTime(), f)
+
+		// 启用缓存
+		c.Header("Cache-Control", "public, max-age=86400")
+
+		// 使用 http.ServeFile - 它内部处理 Range 请求最稳定
+		http.ServeFile(c.Writer, c.Request, abs)
 	}
 }
