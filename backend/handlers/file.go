@@ -77,7 +77,7 @@ func (h *FileHandler) DownloadFile(c *gin.Context) {
 
 	modTime := time.UnixMilli(info.ModTime)
 
-	// Let net/http handle Range, ETag, Last-Modified, and Content-Type
+	// Let net/http handle Range, ETag, Last-Modified, Content-Type, and Accept-Ranges
 	if info.MIME != "" {
 		c.Header("Content-Type", info.MIME)
 	}
@@ -86,7 +86,6 @@ func (h *FileHandler) DownloadFile(c *gin.Context) {
 	} else {
 		c.Header("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, filepath.Base(info.Name)))
 	}
-	c.Header("Accept-Ranges", "bytes")
 	http.ServeContent(c.Writer, c.Request, info.Name, modTime, f)
 }
 
@@ -275,8 +274,11 @@ func StaticFileMiddleware(svc *services.FileService) gin.HandlerFunc {
 		if info != nil && info.MIME != "" {
 			c.Header("Content-Type", info.MIME)
 		}
-		c.Header("Accept-Ranges", "bytes")
-		c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
+		// http.ServeContent 会自动处理:
+		// - Range 请求（返回 206 Partial Content）
+		// - 正确的 Content-Length（整个文件或部分范围）
+		// - Accept-Ranges 头
+		// 不要手动设置 Content-Length，否则会破坏 Range 请求
 		http.ServeContent(c.Writer, c.Request, stat.Name(), stat.ModTime(), f)
 	}
 }
