@@ -5,11 +5,17 @@
       ref="audioEl"
       :src="currentUrl"
       :autoplay="store.isPlaying"
+      preload="auto"
+      crossorigin="anonymous"
       @timeupdate="onTimeUpdate"
       @durationchange="onDurationChange"
       @ended="onEnded"
       @play="store.setIsPlaying(true)"
       @pause="store.setIsPlaying(false)"
+      @waiting="onWaiting"
+      @canplay="onCanPlay"
+      @stalled="onStalled"
+      @error="onError"
     />
 
     <div class="player-inner">
@@ -63,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { fileApi } from '@/services/api'
 import { useMediaPlayerStore } from '@/stores/audioPlayer'
 
@@ -109,6 +115,62 @@ function onSeek(val: number) {
   store.seek(t)
 }
 
+// 缓冲事件处理
+let retryTimer: ReturnType<typeof setTimeout> | null = null
+let retryCount = 0
+const MAX_RETRIES = 3
+
+function onWaiting() {
+  // 播放器因缓冲不足而暂停
+  console.log('[Audio] Buffering...')
+}
+
+function onCanPlay() {
+  // 缓冲足够，可以继续播放
+  console.log('[Audio] Can play now')
+  retryCount = 0
+  if (retryTimer) {
+    clearTimeout(retryTimer)
+    retryTimer = null
+  }
+}
+
+function onStalled() {
+  // 网络连接中断，数据获取停止
+  console.warn('[Audio] Playback stalled - network issue')
+}
+
+function onError(e: Event) {
+  console.error('[Audio] Playback error:', e)
+  const audio = audioEl.value
+  if (!audio) return
+
+  const error = audio.error
+  console.error('[Audio] Error details:', {
+    code: error?.code,
+    message: error?.message,
+    networkState: audio.networkState,
+    readyState: audio.readyState
+  })
+
+  // 自动重试机制
+  if (retryCount < MAX_RETRIES) {
+    retryCount++
+    console.log(`[Audio] Retrying playback (${retryCount}/${MAX_RETRIES})...`)
+
+    if (retryTimer) clearTimeout(retryTimer)
+    retryTimer = setTimeout(() => {
+      // 重新加载并播放
+      const currentTime = audio.currentTime
+      audio.load()
+      audio.currentTime = currentTime
+      if (store.isPlaying) {
+        audio.play().catch(() => {})
+      }
+    }, 1000 * retryCount) // 指数退避
+  }
+}
+
 // Sync play/pause from store
 watch(() => store.isPlaying, (playing) => {
   if (!audioEl.value) return
@@ -116,10 +178,18 @@ watch(() => store.isPlaying, (playing) => {
   else audioEl.value.pause()
 })
 
-// Seek when store.currentTime set externally  
+// Seek when store.currentTime set externally
 watch(() => store.currentTime, (t) => {
   if (audioEl.value && Math.abs(audioEl.value.currentTime - t) > 1) {
     audioEl.value.currentTime = t
+  }
+})
+
+// 清理定时器
+onBeforeUnmount(() => {
+  if (retryTimer) {
+    clearTimeout(retryTimer)
+    retryTimer = null
   }
 })
 </script>
